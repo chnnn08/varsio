@@ -1,0 +1,10 @@
+<svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon mark -->
+  <rect width="48" height="48" rx="12" fill="#002A5C"/>
+  <!-- S shape: top arc -->
+  <path d="M13.5 18 Q13.5 12 19 12 H28 Q34 12 34 18 Q34 24 24 24" stroke="#F0B429" strokeWidth="4.5" fill="none" strokeLinecap="round"/>
+  <!-- S shape: bottom arc -->
+  <path d="M34.5 30 Q34.5 36 29 36 H20 Q14 36 14 30 Q14 24 24 24" stroke="#F0B429" strokeWidth="4.5" fill="none" strokeLinecap="round"/>
+  <!-- Wordmark -->
+  <text x="62" y="31" font-family="'Arial Black', 'Helvetica Neue', Arial, sans-serif" font-size="22" font-weight="900" fill="#002A5C" letter-spacing="-0.5">Studia</text>
+</svg>
