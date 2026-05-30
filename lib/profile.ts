@@ -2,7 +2,7 @@ export type Profile = {
   id: string;
   displayName: string;
   year: string;
-  program: string;
+  programs: string[];
   bio: string;
 };
 
