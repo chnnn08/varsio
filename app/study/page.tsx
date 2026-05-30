@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { getProfile, type Profile } from "@/lib/profile";
@@ -303,7 +303,7 @@ export default function StudyPage() {
               <textarea
                 value={materialsText}
                 onChange={(e) => setMaterialsText(e.target.value)}
-                placeholder=”Paste your study material here - lecture notes, textbook sections, problem sets...”
+                placeholder="Paste your study material here - lecture notes, textbook sections, problem sets..."
                 rows={10}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C] mb-4"
               />

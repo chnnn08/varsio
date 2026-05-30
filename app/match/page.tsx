@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
@@ -481,7 +481,7 @@ export default function MatchPage() {
                       <p>{c.code}</p>
                       {c.section && <p className="text-white/50 text-[10px]">{c.section}</p>}
                     </div>
-                    <button onClick={() => removeCourse(c.code)} className="text-white/40 hover:text-white mt-0.5 transition-colors">Ã—</button>
+                    <button onClick={() => removeCourse(c.code)} className="text-white/40 hover:text-white mt-0.5 transition-colors">×</button>
                   </div>
                 ))}
               </div>

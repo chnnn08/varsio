@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
@@ -251,7 +251,7 @@ export default function ToolsPage() {
             <div className="space-y-2">
               {sortedDeadlines.length === 0 ? (
                 <div className="bg-white border border-gray-100 rounded-2xl text-center py-14 text-gray-300">
-                  <p className=”text-sm”>No deadlines yet - paste your syllabus above</p>
+                  <p className="text-sm">No deadlines yet - paste your syllabus above</p>
                 </div>
               ) : (
                 sortedDeadlines.map((d) => (
@@ -267,7 +267,7 @@ export default function ToolsPage() {
                       </div>
                     </div>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${TYPE_COLORS[d.type] ?? TYPE_COLORS.other}`}>{d.type}</span>
-                    <button onClick={() => removeDeadline(d.id)} className="text-gray-300 hover:text-red-400 transition-colors text-lg shrink-0">Ã—</button>
+                    <button onClick={() => removeDeadline(d.id)} className="text-gray-300 hover:text-red-400 transition-colors text-lg shrink-0">×</button>
                   </div>
                 ))
               )}
@@ -306,13 +306,13 @@ export default function ToolsPage() {
                     <div className="px-5 py-4 text-center">
                       <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Current</p>
                       <p className={`text-2xl font-black ${gradeColor(current)}`}>
-                        {current !== null ? `${current.toFixed(1)}%` : “-”}
+                        {current !== null ? `${current.toFixed(1)}%` : "-"}
                       </p>
                     </div>
                     <div className="px-5 py-4 text-center">
                       <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Needed</p>
                       <p className={`text-2xl font-black ${needed !== null ? gradeColor(needed) : "text-gray-300"}`}>
-                        {needed !== null ? (needed > 100 ? "Impossible" : needed < 0 ? "Done!" : `${needed.toFixed(1)}%`) : “-”}
+                        {needed !== null ? (needed > 100 ? "Impossible" : needed < 0 ? "Done!" : `${needed.toFixed(1)}%`) : "-"}
                       </p>
                     </div>
                     <div className="px-5 py-4 text-center">
@@ -348,7 +348,7 @@ export default function ToolsPage() {
                           placeholder="Grade"
                           className={`w-20 border rounded-xl px-2 py-2 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-[#002A5C] ${comp.grade !== null ? gradeColor(comp.grade).replace("text-", "border-").replace("[#1a8c4e]", "green-300").replace("[#F0B429]", "yellow-300").replace("red-500", "red-300") : "border-gray-200"}`}
                         />
-                        <button onClick={() => setCourses((prev) => prev.map((c) => c.id === course.id ? { ...c, components: c.components.filter((x) => x.id !== comp.id) } : c))} className="text-gray-300 hover:text-red-400 transition-colors">Ã—</button>
+                        <button onClick={() => setCourses((prev) => prev.map((c) => c.id === course.id ? { ...c, components: c.components.filter((x) => x.id !== comp.id) } : c))} className="text-gray-300 hover:text-red-400 transition-colors">×</button>
                       </div>
                     ))}
                     <button onClick={() => addComponent(course.id)} className="text-xs text-[#002A5C] font-semibold hover:text-black transition-colors mt-1">+ Add component</button>
