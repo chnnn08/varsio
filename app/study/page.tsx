@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getProfile, type Profile } from "@/lib/profile";
 import Link from "next/link";
 
-// â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- types ---------------------------------------------------------------------
 type QuizQuestion = {
   question: string;
   options: string[];
@@ -37,7 +37,7 @@ type View = "list" | "create" | "session";
 type SessionTab = "materials" | "quiz" | "chat";
 type QuizState = "idle" | "generating" | "ready" | "taking" | "done";
 
-// â”€â”€ in-memory store â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- in-memory store -----------------------------------------------------------
 const SESSIONS: Record<string, StudySession> = {
   demo1: {
     id: "demo1",
@@ -75,7 +75,7 @@ function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// â”€â”€ component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- component ------------------------------------------------------------------
 export default function StudyPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [view, setView] = useState<View>("list");
@@ -109,7 +109,7 @@ export default function StudyPage() {
     setProfile(getProfile());
   }, []);
 
-  // â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- helpers ----------------------------------------------------------------
   function openSession(s: StudySession) {
     if (profile && !s.participants.includes(profile.displayName)) {
       const updated = { ...s, participants: [...s.participants, profile.displayName] };
@@ -231,7 +231,7 @@ export default function StudyPage() {
   const score = answers.filter((a, i) => a === questions[i]?.answer).length;
   const publicSessions = Object.values(sessions).filter((s) => s.isPublic);
 
-  // â”€â”€ no profile guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- no profile guard ------------------------------------------------------
   if (!profile) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center px-6">
@@ -242,20 +242,20 @@ export default function StudyPage() {
           <h2 className="text-xl font-black text-black mb-2">Profile Required</h2>
           <p className="text-gray-400 text-sm mb-6">Create a profile to join or host study sessions. Your display name will appear in sessions.</p>
           <Link href="/profile" className="block bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors">
-            Create Profile â†’
+            Create Profile →
           </Link>
         </div>
       </div>
     );
   }
 
-  // â”€â”€ session view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- session view ---------------------------------------------------------
   if (view === "session" && activeSession) {
     return (
       <div className="min-h-screen bg-[#F4F6F9]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
           <button onClick={() => setView("list")} className="text-sm text-gray-400 hover:text-gray-700 flex items-center gap-1.5 mb-6 transition-colors">
-            â† Back to Sessions
+            ← Back to Sessions
           </button>
 
           {/* Session header */}
@@ -319,7 +319,7 @@ export default function StudyPage() {
                     Generating quiz with AI...
                   </>
                 ) : (
-                  "Generate Quiz with AI â†’"
+                  "Generate Quiz with AI →"
                 )}
               </button>
             </div>
@@ -346,7 +346,7 @@ export default function StudyPage() {
                     onClick={startQuiz}
                     className="bg-[#002A5C] text-white font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-black transition-colors"
                   >
-                    Start Quiz â†’
+                    Start Quiz →
                   </button>
                 </div>
               )}
@@ -408,7 +408,7 @@ export default function StudyPage() {
                       onClick={nextQuestion}
                       className="w-full bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors"
                     >
-                      {currentQ + 1 < questions.length ? "Next Question â†’" : "See Results â†’"}
+                      {currentQ + 1 < questions.length ? "Next Question →" : "See Results →"}
                     </button>
                   )}
                 </div>
@@ -492,12 +492,12 @@ export default function StudyPage() {
     );
   }
 
-  // â”€â”€ create form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- create form ------------------------------------------------------------
   if (view === "create") {
     return (
       <div className="min-h-screen bg-[#F4F6F9]">
         <div className="max-w-lg mx-auto px-6 py-14">
-          <button onClick={() => setView("list")} className="text-sm text-gray-400 hover:text-gray-700 flex items-center gap-1.5 mb-8 transition-colors">â† Back</button>
+          <button onClick={() => setView("list")} className="text-sm text-gray-400 hover:text-gray-700 flex items-center gap-1.5 mb-8 transition-colors">← Back</button>
           <h1 className="text-2xl font-black text-black mb-8">Create a Study Session</h1>
           <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-5">
             <div>
@@ -523,7 +523,7 @@ export default function StudyPage() {
             </div>
             {formError && <p className="text-red-500 text-xs font-medium">{formError}</p>}
             <button onClick={createSession} className="w-full bg-[#002A5C] text-white font-bold py-3.5 rounded-xl text-sm hover:bg-black transition-colors">
-              Create Session â†’
+              Create Session →
             </button>
           </div>
         </div>
@@ -531,7 +531,7 @@ export default function StudyPage() {
     );
   }
 
-  // â”€â”€ list view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- list view --------------------------------------------------------------
   return (
     <div className="min-h-screen bg-[#F4F6F9]">
       <div className="bg-[#002A5C] text-white py-14 px-6">
@@ -590,7 +590,7 @@ export default function StudyPage() {
                 <h3 className="font-bold text-black text-sm mb-1 group-hover:text-[#002A5C] transition-colors">{s.title}</h3>
                 <p className="text-xs text-gray-400">Hosted by {s.hostName}</p>
                 {s.quizzes.length > 0 && (
-                  <p className="text-xs text-green-600 font-semibold mt-2">âœ“ {s.quizzes.length} quiz questions ready</p>
+                  <p className="text-xs text-green-600 font-semibold mt-2">✓ {s.quizzes.length} quiz questions ready</p>
                 )}
               </button>
             ))}

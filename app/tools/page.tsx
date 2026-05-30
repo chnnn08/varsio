@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 
-// â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- types ---------------------------------------------------------------------
 type Deadline = { id: string; title: string; date: string; type: string; weight: string; course: string };
 type Component = { id: string; name: string; weight: number; grade: number | null };
 
 type Tab = "deadlines" | "grades";
 
-// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- helpers -------------------------------------------------------------------
 function urgencyColor(dateStr: string) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return "bg-gray-100 text-gray-500 border-gray-200";
@@ -38,7 +38,7 @@ const TYPE_COLORS: Record<string, string> = {
   other: "bg-gray-100 text-gray-600",
 };
 
-// â”€â”€ component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- component ------------------------------------------------------------------
 export default function ToolsPage() {
   const [tab, setTab] = useState<Tab>("deadlines");
 
@@ -68,7 +68,7 @@ export default function ToolsPage() {
   ]);
   const [newCourseName, setNewCourseName] = useState("");
 
-  // â”€â”€ deadline functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- deadline functions ------------------------------------------------------
   async function extractDeadlines() {
     if (!syllabus.trim()) { setExtractError("Paste your syllabus first."); return; }
     setExtracting(true); setExtractError("");
@@ -107,7 +107,7 @@ export default function ToolsPage() {
     return da - db;
   });
 
-  // â”€â”€ grade functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- grade functions ---------------------------------------------------------
   function updateGrade(courseId: string, compId: string, val: string) {
     const n = val === "" ? null : Math.min(100, Math.max(0, parseFloat(val)));
     setCourses((prev) => prev.map((c) =>
@@ -194,7 +194,7 @@ export default function ToolsPage() {
           ))}
         </div>
 
-        {/* â”€â”€ DEADLINE TRACKER â”€â”€ */}
+        {/* -- DEADLINE TRACKER -- */}
         {tab === "deadlines" && (
           <div className="space-y-4">
             {/* AI extraction */}
@@ -275,7 +275,7 @@ export default function ToolsPage() {
           </div>
         )}
 
-        {/* â”€â”€ GRADE CALCULATOR â”€â”€ */}
+        {/* -- GRADE CALCULATOR -- */}
         {tab === "grades" && (
           <div className="space-y-4">
             {courses.map((course) => {

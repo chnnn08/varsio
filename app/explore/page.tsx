@@ -203,7 +203,7 @@ export default function ExplorePage() {
                 <p className="text-xs text-gray-400 font-mono mt-0.5">{p.course}</p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xs text-amber-400 font-bold">{"â˜…".repeat(Math.round(p.rating))}{"â˜†".repeat(5 - Math.round(p.rating))}</p>
+                <p className="text-xs text-amber-400 font-bold">{"★".repeat(Math.round(p.rating))}{"☆".repeat(5 - Math.round(p.rating))}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{p.reviews} reviews</p>
               </div>
               <div className="text-right shrink-0 w-16">

@@ -395,7 +395,7 @@ export default function ChatPage() {
           <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center">
             <p className="text-sm text-gray-500 mb-3">You need a profile to post in the community.</p>
             <Link href="/profile" className="inline-block bg-[#002A5C] text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-black transition-colors">
-              Create Profile â†’
+              Create Profile →
             </Link>
           </div>
         )}

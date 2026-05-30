@@ -4,14 +4,14 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { createWorker } from "tesseract.js";
 
-// â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- types --------------------------------------------------------------------
 type InputMethod = "manual" | "screenshot";
 type Step = "landing" | "setup" | "room";
 type Member = { name: string; courses: CourseEntry[] };
 type Room = { code: string; members: Member[] };
 type CourseEntry = { code: string; section: string };
 
-// â”€â”€ shared room store (in-memory for demo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- shared room store (in-memory for demo) -----------------------------------
 const ROOMS: Record<string, Room> = {};
 
 function generateCode() {
@@ -35,7 +35,7 @@ function getOverlap(members: Member[]): string[] {
   return [...sets[0]].filter((c) => sets.every((s) => s.has(c)));
 }
 
-// â”€â”€ subcomponents â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- subcomponents -------------------------------------------------------------
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
     <div className="flex items-center gap-2 mb-8">
@@ -67,7 +67,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
   );
 }
 
-// â”€â”€ main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- main page -----------------------------------------------------------------
 export default function MatchPage() {
   const [step, setStep] = useState<Step>("landing");
   const [mode, setMode] = useState<"create" | "join">("create");
@@ -95,7 +95,7 @@ export default function MatchPage() {
     }
   }, [searchParams]);
 
-  // â”€â”€ course helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- course helpers ----------------------------------------------------------
   function addCourse() {
     const code = codeInput.trim().toUpperCase();
     if (!code || courses.find((c) => c.code === code)) return;
@@ -108,7 +108,7 @@ export default function MatchPage() {
     setCourses(courses.filter((c) => c.code !== code));
   }
 
-  // â”€â”€ OCR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- OCR ---------------------------------------------------------------------
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
       setError("Please upload an image file (PNG, JPG).");
@@ -147,7 +147,7 @@ export default function MatchPage() {
     if (file) handleFile(file);
   }, []);
 
-  // â”€â”€ room actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- room actions -------------------------------------------------------------
   function submit() {
     if (!name.trim()) { setError("Enter your name."); return; }
     if (courses.length === 0) { setError("Add at least one course."); return; }
@@ -185,13 +185,13 @@ export default function MatchPage() {
 
   const overlap = room ? getOverlap(room.members) : [];
 
-  // â”€â”€ room view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- room view -----------------------------------------------------------------
   if (step === "room" && room) {
     return (
       <div className="min-h-screen bg-[#F4F6F9]">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-14">
           <button onClick={reset} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-8 transition-colors">
-            â† New Session
+            ← New Session
           </button>
 
           {/* Room code card */}
@@ -208,7 +208,7 @@ export default function MatchPage() {
                   : "bg-white border-gray-200 text-gray-600 hover:border-[#002A5C] hover:text-[#002A5C]"
               }`}
             >
-              {copied ? "âœ“ Copied" : "Copy Code"}
+              {copied ? "✓ Copied" : "Copy Code"}
             </button>
           </div>
 
@@ -264,7 +264,7 @@ export default function MatchPage() {
     );
   }
 
-  // â”€â”€ landing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- landing -------------------------------------------------------------------
   if (step === "landing") {
     return (
       <div className="min-h-screen bg-[#F4F6F9]">
@@ -296,7 +296,7 @@ export default function MatchPage() {
                   <span className="w-6 h-6 rounded-full border border-white/20 text-white/50 text-xs flex items-center justify-center font-bold shrink-0">{i + 1}</span>
                   {s}
                 </div>
-                {i < 2 && <span className="text-white/20 hidden sm:block">â†’</span>}
+                {i < 2 && <span className="text-white/20 hidden sm:block">→</span>}
               </div>
             ))}
           </div>
@@ -306,7 +306,7 @@ export default function MatchPage() {
               onClick={() => { setMode("create"); setStep("setup"); }}
               className="bg-white text-[#002A5C] font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-gray-100 transition-colors"
             >
-              Create a Room â†’
+              Create a Room →
             </button>
             <button
               onClick={() => { setMode("join"); setStep("setup"); }}
@@ -334,12 +334,12 @@ export default function MatchPage() {
     );
   }
 
-  // â”€â”€ setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- setup ---------------------------------------------------------------------
   return (
     <div className="min-h-screen bg-[#F4F6F9]">
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-14">
         <button onClick={() => setStep("landing")} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-6 transition-colors">
-          â† Back
+          ← Back
         </button>
 
         <StepIndicator current={1} total={3} />
@@ -495,7 +495,7 @@ export default function MatchPage() {
             disabled={scanning}
             className="w-full bg-[#002A5C] text-white font-bold py-3.5 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {mode === "create" ? "Create Room â†’" : "Join Room â†’"}
+            {mode === "create" ? "Create Room →" : "Join Room →"}
           </button>
         </div>
       </div>

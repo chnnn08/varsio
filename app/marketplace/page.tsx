@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { getProfile } from "@/lib/profile";
 import Link from "next/link";
 
-// â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- types ---------------------------------------------------------------------
 type Tutor = {
   id: string; name: string; course: string; subjects: string[];
   rate: number; bio: string; rating: number; sessions: number; available: boolean;
@@ -18,7 +18,7 @@ type Textbook = {
 
 type Tab = "tutoring" | "textbooks";
 
-// â”€â”€ mock data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- mock data ------------------------------------------------------------------
 const INITIAL_TUTORS: Tutor[] = [
   { id: "t1", name: "Alex K.", course: "CSC", subjects: ["CSC108H1", "CSC148H1", "CSC207H1"], rate: 25, bio: "4th year CS student. Helped 30+ students pass their first CS courses.", rating: 4.9, sessions: 47, available: true },
   { id: "t2", name: "Maya T.", course: "MAT", subjects: ["MAT137Y1", "MAT237Y1", "MAT224H1"], rate: 30, bio: "Math specialist. Patient with proofs and calculus. Available evenings.", rating: 4.8, sessions: 32, available: true },
@@ -43,12 +43,12 @@ const CONDITION_COLORS: Record<string, string> = {
 function Stars({ n }: { n: number }) {
   return (
     <span className="text-[#F0B429]">
-      {"â˜…".repeat(Math.floor(n))}{"â˜†".repeat(5 - Math.floor(n))}
+      {"★".repeat(Math.floor(n))}{"☆".repeat(5 - Math.floor(n))}
     </span>
   );
 }
 
-// â”€â”€ component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// -- component ------------------------------------------------------------------
 export default function MarketplacePage() {
   const [tab, setTab] = useState<Tab>("tutoring");
   const [profileName, setProfileName] = useState<string | null>(null);
@@ -146,7 +146,7 @@ export default function MarketplacePage() {
           ))}
         </div>
 
-        {/* â”€â”€ TUTORING â”€â”€ */}
+        {/* -- TUTORING -- */}
         {tab === "tutoring" && (
           <div className="space-y-4">
             {/* Become a tutor form */}
@@ -171,7 +171,7 @@ export default function MarketplacePage() {
                     <textarea value={tutorForm.bio} onChange={(e) => setTutorForm({ ...tutorForm, bio: e.target.value })} placeholder="Tell students about your background and teaching style..." rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
                   </div>
                   <button onClick={listAsTutor} disabled={!profileName} className="w-full bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40">
-                    List as Tutor â†’
+                    List as Tutor →
                   </button>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export default function MarketplacePage() {
             {/* Varsio Pro note */}
             <div className="bg-[#F0B429]/10 border border-[#F0B429]/30 rounded-2xl px-5 py-3 flex items-center justify-between">
               <p className="text-sm font-semibold text-yellow-800">Varsio Pro tutors get priority placement and profile badges</p>
-              <Link href="/#pricing" className="text-xs font-bold text-yellow-800 hover:text-black transition-colors">Upgrade â†’</Link>
+              <Link href="/#pricing" className="text-xs font-bold text-yellow-800 hover:text-black transition-colors">Upgrade →</Link>
             </div>
 
             {/* Search */}
@@ -228,7 +228,7 @@ export default function MarketplacePage() {
           </div>
         )}
 
-        {/* â”€â”€ TEXTBOOKS â”€â”€ */}
+        {/* -- TEXTBOOKS -- */}
         {tab === "textbooks" && (
           <div className="space-y-4">
             {/* List form */}
@@ -248,7 +248,7 @@ export default function MarketplacePage() {
                   ))}
                 </div>
                 <button onClick={listTextbook} disabled={!profileName} className="w-full bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40">
-                  List Textbook â†’
+                  List Textbook →
                 </button>
               </div>
             )}
