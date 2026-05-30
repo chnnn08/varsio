@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { getProfile, type Profile } from "@/lib/profile";
 import Link from "next/link";
 
-// ── types ─────────────────────────────────────────────────────────────────────
+// â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type QuizQuestion = {
   question: string;
   options: string[];
@@ -37,12 +37,12 @@ type View = "list" | "create" | "session";
 type SessionTab = "materials" | "quiz" | "chat";
 type QuizState = "idle" | "generating" | "ready" | "taking" | "done";
 
-// ── in-memory store ───────────────────────────────────────────────────────────
+// â”€â”€ in-memory store â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SESSIONS: Record<string, StudySession> = {
   demo1: {
     id: "demo1",
     code: "DEMO01",
-    title: "CSC148 — Trees & Recursion",
+    title: "CSC148 â€” Trees & Recursion",
     subject: "CSC148H1",
     hostName: "alex_cs",
     isPublic: true,
@@ -75,7 +75,7 @@ function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// ── component ──────────────────────────────────────────────────────────────────
+// â”€â”€ component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function StudyPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [view, setView] = useState<View>("list");
@@ -109,7 +109,7 @@ export default function StudyPage() {
     setProfile(getProfile());
   }, []);
 
-  // ── helpers ────────────────────────────────────────────────────────────────
+  // â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function openSession(s: StudySession) {
     if (profile && !s.participants.includes(profile.displayName)) {
       const updated = { ...s, participants: [...s.participants, profile.displayName] };
@@ -231,7 +231,7 @@ export default function StudyPage() {
   const score = answers.filter((a, i) => a === questions[i]?.answer).length;
   const publicSessions = Object.values(sessions).filter((s) => s.isPublic);
 
-  // ── no profile guard ──────────────────────────────────────────────────────
+  // â”€â”€ no profile guard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!profile) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center px-6">
@@ -242,20 +242,20 @@ export default function StudyPage() {
           <h2 className="text-xl font-black text-black mb-2">Profile Required</h2>
           <p className="text-gray-400 text-sm mb-6">Create a profile to join or host study sessions. Your display name will appear in sessions.</p>
           <Link href="/profile" className="block bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors">
-            Create Profile →
+            Create Profile â†’
           </Link>
         </div>
       </div>
     );
   }
 
-  // ── session view ─────────────────────────────────────────────────────────
+  // â”€â”€ session view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (view === "session" && activeSession) {
     return (
       <div className="min-h-screen bg-[#F4F6F9]">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
           <button onClick={() => setView("list")} className="text-sm text-gray-400 hover:text-gray-700 flex items-center gap-1.5 mb-6 transition-colors">
-            ← Back to Sessions
+            â† Back to Sessions
           </button>
 
           {/* Session header */}
@@ -271,7 +271,7 @@ export default function StudyPage() {
                 <h1 className="text-xl font-black text-black">{activeSession.title}</h1>
                 <p className="text-sm text-gray-400 mt-0.5">
                   Hosted by <span className="font-semibold text-[#002A5C]">{activeSession.hostName}</span>
-                  {" · "}{activeSession.participants.length} participant{activeSession.participants.length !== 1 ? "s" : ""}
+                  {" Â· "}{activeSession.participants.length} participant{activeSession.participants.length !== 1 ? "s" : ""}
                 </p>
               </div>
               <span className="bg-[#002A5C]/8 text-[#002A5C] text-xs font-bold px-3 py-1.5 rounded-xl font-mono shrink-0">
@@ -303,7 +303,7 @@ export default function StudyPage() {
               <textarea
                 value={materialsText}
                 onChange={(e) => setMaterialsText(e.target.value)}
-                placeholder="Paste your study material here — lecture notes, textbook sections, problem sets…"
+                placeholder="Paste your study material here â€” lecture notes, textbook sections, problem setsâ€¦"
                 rows={10}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C] mb-4"
               />
@@ -316,10 +316,10 @@ export default function StudyPage() {
                 {quizState === "generating" ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Generating quiz with AI…
+                    Generating quiz with AIâ€¦
                   </>
                 ) : (
-                  "Generate Quiz with AI →"
+                  "Generate Quiz with AI â†’"
                 )}
               </button>
             </div>
@@ -346,7 +346,7 @@ export default function StudyPage() {
                     onClick={startQuiz}
                     className="bg-[#002A5C] text-white font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-black transition-colors"
                   >
-                    Start Quiz →
+                    Start Quiz â†’
                   </button>
                 </div>
               )}
@@ -408,7 +408,7 @@ export default function StudyPage() {
                       onClick={nextQuestion}
                       className="w-full bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors"
                     >
-                      {currentQ + 1 < questions.length ? "Next Question →" : "See Results →"}
+                      {currentQ + 1 < questions.length ? "Next Question â†’" : "See Results â†’"}
                     </button>
                   )}
                 </div>
@@ -442,7 +442,7 @@ export default function StudyPage() {
               <div className="p-5 min-h-64 space-y-3 max-h-96 overflow-y-auto">
                 {activeSession.messages.length === 0 ? (
                   <div className="text-center py-12 text-gray-300">
-                    <p className="text-3xl mb-2">💬</p>
+                    <p className="text-3xl mb-2">ðŸ’¬</p>
                     <p className="text-sm">No messages yet. Start the conversation.</p>
                   </div>
                 ) : (
@@ -466,7 +466,7 @@ export default function StudyPage() {
                           </button>
                         )}
                       </div>
-                      <p className="text-sm text-gray-700 ml-8">{m.reported ? "[Reported — under review]" : m.text}</p>
+                      <p className="text-sm text-gray-700 ml-8">{m.reported ? "[Reported â€” under review]" : m.text}</p>
                     </div>
                   ))
                 )}
@@ -476,7 +476,7 @@ export default function StudyPage() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  placeholder={`Message as ${profile.displayName}…`}
+                  placeholder={`Message as ${profile.displayName}â€¦`}
                   className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
                 />
                 <button
@@ -493,12 +493,12 @@ export default function StudyPage() {
     );
   }
 
-  // ── create form ────────────────────────────────────────────────────────────
+  // â”€â”€ create form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (view === "create") {
     return (
       <div className="min-h-screen bg-[#F4F6F9]">
         <div className="max-w-lg mx-auto px-6 py-14">
-          <button onClick={() => setView("list")} className="text-sm text-gray-400 hover:text-gray-700 flex items-center gap-1.5 mb-8 transition-colors">← Back</button>
+          <button onClick={() => setView("list")} className="text-sm text-gray-400 hover:text-gray-700 flex items-center gap-1.5 mb-8 transition-colors">â† Back</button>
           <h1 className="text-2xl font-black text-black mb-8">Create a Study Session</h1>
           <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-5">
             <div>
@@ -524,7 +524,7 @@ export default function StudyPage() {
             </div>
             {formError && <p className="text-red-500 text-xs font-medium">{formError}</p>}
             <button onClick={createSession} className="w-full bg-[#002A5C] text-white font-bold py-3.5 rounded-xl text-sm hover:bg-black transition-colors">
-              Create Session →
+              Create Session â†’
             </button>
           </div>
         </div>
@@ -532,7 +532,7 @@ export default function StudyPage() {
     );
   }
 
-  // ── list view ──────────────────────────────────────────────────────────────
+  // â”€â”€ list view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="min-h-screen bg-[#F4F6F9]">
       <div className="bg-[#002A5C] text-white py-14 px-6">
@@ -574,7 +574,7 @@ export default function StudyPage() {
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Public Sessions</p>
         {publicSessions.length === 0 ? (
           <div className="text-center py-16 text-gray-300">
-            <p className="text-sm font-semibold">No public sessions yet — create the first one</p>
+            <p className="text-sm font-semibold">No public sessions yet â€” create the first one</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
@@ -591,7 +591,7 @@ export default function StudyPage() {
                 <h3 className="font-bold text-black text-sm mb-1 group-hover:text-[#002A5C] transition-colors">{s.title}</h3>
                 <p className="text-xs text-gray-400">Hosted by {s.hostName}</p>
                 {s.quizzes.length > 0 && (
-                  <p className="text-xs text-green-600 font-semibold mt-2">✓ {s.quizzes.length} quiz questions ready</p>
+                  <p className="text-xs text-green-600 font-semibold mt-2">âœ“ {s.quizzes.length} quiz questions ready</p>
                 )}
               </button>
             ))}

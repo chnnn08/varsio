@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: {
-    default: "Varsio — Student Platform for University of Toronto",
+    default: "Varsio â€” Student Platform for University of Toronto",
     template: "%s | Varsio",
   },
   description:
@@ -15,19 +15,19 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Varsio" }],
   creator: "Varsio",
-  metadataBase: new URL("https://varsio.netlify.app"),
+  metadataBase: new URL("https://varsio.vercel.app"),
   openGraph: {
     type: "website",
-    url: "https://varsio.netlify.app",
+    url: "https://varsio.vercel.app",
     siteName: "Varsio",
-    title: "Varsio — Student Platform for University of Toronto",
+    title: "Varsio â€” Student Platform for University of Toronto",
     description:
       "Match courses with friends, run AI study sessions, and access tools built for UofT students across all three campuses.",
     locale: "en_CA",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Varsio — Student Platform for University of Toronto",
+    title: "Varsio â€” Student Platform for University of Toronto",
     description:
       "Match courses with friends, run AI study sessions, and access tools built for UofT students across all three campuses.",
     creator: "@varsio",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://varsio.netlify.app",
+    canonical: "https://varsio.vercel.app",
   },
   verification: {
     google: "iR84YbhiR-KJYriX-IwYTvAT85Ap_sZ_YGafoOSmeGo",

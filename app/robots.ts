@@ -1,8 +1,8 @@
-import { MetadataRoute } from "next";
+﻿import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: { userAgent: "*", allow: "/" },
-    sitemap: "https://varsio.netlify.app/sitemap.xml",
+    sitemap: "https://varsio.vercel.app/sitemap.xml",
   };
 }

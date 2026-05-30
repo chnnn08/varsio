@@ -1,16 +1,16 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useCallback } from "react";
 import { createWorker } from "tesseract.js";
 
-// ── types ────────────────────────────────────────────────────────────────────
+// â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type InputMethod = "manual" | "screenshot";
 type Step = "landing" | "setup" | "room";
 type Member = { name: string; courses: CourseEntry[] };
 type Room = { code: string; members: Member[] };
 type CourseEntry = { code: string; section: string };
 
-// ── shared room store (in-memory for demo) ───────────────────────────────────
+// â”€â”€ shared room store (in-memory for demo) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ROOMS: Record<string, Room> = {};
 
 function generateCode() {
@@ -34,7 +34,7 @@ function getOverlap(members: Member[]): string[] {
   return [...sets[0]].filter((c) => sets.every((s) => s.has(c)));
 }
 
-// ── subcomponents ─────────────────────────────────────────────────────────────
+// â”€â”€ subcomponents â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
     <div className="flex items-center gap-2 mb-8">
@@ -66,7 +66,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
   );
 }
 
-// ── main page ─────────────────────────────────────────────────────────────────
+// â”€â”€ main page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function MatchPage() {
   const [step, setStep] = useState<Step>("landing");
   const [mode, setMode] = useState<"create" | "join">("create");
@@ -85,7 +85,7 @@ export default function MatchPage() {
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // ── course helpers ──────────────────────────────────────────────────────────
+  // â”€â”€ course helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function addCourse() {
     const code = codeInput.trim().toUpperCase();
     if (!code || courses.find((c) => c.code === code)) return;
@@ -98,7 +98,7 @@ export default function MatchPage() {
     setCourses(courses.filter((c) => c.code !== code));
   }
 
-  // ── OCR ─────────────────────────────────────────────────────────────────────
+  // â”€â”€ OCR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function handleFile(file: File) {
     if (!file.type.startsWith("image/")) {
       setError("Please upload an image file (PNG, JPG).");
@@ -137,7 +137,7 @@ export default function MatchPage() {
     if (file) handleFile(file);
   }, []);
 
-  // ── room actions ─────────────────────────────────────────────────────────────
+  // â”€â”€ room actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function submit() {
     if (!name.trim()) { setError("Enter your name."); return; }
     if (courses.length === 0) { setError("Add at least one course."); return; }
@@ -175,13 +175,13 @@ export default function MatchPage() {
 
   const overlap = room ? getOverlap(room.members) : [];
 
-  // ── room view ─────────────────────────────────────────────────────────────────
+  // â”€â”€ room view â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (step === "room" && room) {
     return (
       <div className="min-h-screen bg-[#F4F6F9]">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 py-14">
           <button onClick={reset} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-8 transition-colors">
-            ← New Session
+            â† New Session
           </button>
 
           {/* Room code card */}
@@ -198,7 +198,7 @@ export default function MatchPage() {
                   : "bg-white border-gray-200 text-gray-600 hover:border-[#002A5C] hover:text-[#002A5C]"
               }`}
             >
-              {copied ? "✓ Copied" : "Copy Code"}
+              {copied ? "âœ“ Copied" : "Copy Code"}
             </button>
           </div>
 
@@ -221,7 +221,7 @@ export default function MatchPage() {
           ) : (
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-4">
               <p className="text-[#002A5C] font-semibold text-sm">
-                Waiting for friends · share code <span className="font-mono font-black">{roomCode}</span>
+                Waiting for friends Â· share code <span className="font-mono font-black">{roomCode}</span>
               </p>
             </div>
           )}
@@ -254,7 +254,7 @@ export default function MatchPage() {
     );
   }
 
-  // ── landing ───────────────────────────────────────────────────────────────────
+  // â”€â”€ landing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (step === "landing") {
     return (
       <div className="min-h-screen bg-[#F4F6F9]">
@@ -276,7 +276,7 @@ export default function MatchPage() {
                   <span className="w-6 h-6 rounded-full border border-white/20 text-white/50 text-xs flex items-center justify-center font-bold shrink-0">{i + 1}</span>
                   {s}
                 </div>
-                {i < 2 && <span className="text-white/20 hidden sm:block">→</span>}
+                {i < 2 && <span className="text-white/20 hidden sm:block">â†’</span>}
               </div>
             ))}
           </div>
@@ -286,7 +286,7 @@ export default function MatchPage() {
               onClick={() => { setMode("create"); setStep("setup"); }}
               className="bg-white text-[#002A5C] font-bold px-8 py-3.5 rounded-xl text-sm hover:bg-gray-100 transition-colors"
             >
-              Create a Room →
+              Create a Room â†’
             </button>
             <button
               onClick={() => { setMode("join"); setStep("setup"); }}
@@ -314,12 +314,12 @@ export default function MatchPage() {
     );
   }
 
-  // ── setup ─────────────────────────────────────────────────────────────────────
+  // â”€â”€ setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div className="min-h-screen bg-[#F4F6F9]">
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-14">
         <button onClick={() => setStep("landing")} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-700 mb-6 transition-colors">
-          ← Back
+          â† Back
         </button>
 
         <StepIndicator current={1} total={3} />
@@ -435,7 +435,7 @@ export default function MatchPage() {
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </div>
                     <p className="text-sm font-semibold text-gray-700 mb-1">Drop your timetable screenshot here</p>
-                    <p className="text-xs text-gray-400 mb-3">or click to browse · PNG, JPG supported</p>
+                    <p className="text-xs text-gray-400 mb-3">or click to browse Â· PNG, JPG supported</p>
                     <p className="text-xs text-gray-300">Works best with ACORN or course calendar screenshots</p>
                   </div>
                 )}
@@ -461,7 +461,7 @@ export default function MatchPage() {
                       <p>{c.code}</p>
                       {c.section && <p className="text-white/50 text-[10px]">{c.section}</p>}
                     </div>
-                    <button onClick={() => removeCourse(c.code)} className="text-white/40 hover:text-white mt-0.5 transition-colors">×</button>
+                    <button onClick={() => removeCourse(c.code)} className="text-white/40 hover:text-white mt-0.5 transition-colors">Ã—</button>
                   </div>
                 ))}
               </div>
@@ -475,7 +475,7 @@ export default function MatchPage() {
             disabled={scanning}
             className="w-full bg-[#002A5C] text-white font-bold py-3.5 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {mode === "create" ? "Create Room →" : "Join Room →"}
+            {mode === "create" ? "Create Room â†’" : "Join Room â†’"}
           </button>
         </div>
       </div>

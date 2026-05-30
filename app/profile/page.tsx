@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { getProfile, saveProfile, clearProfile, type Profile } from "@/lib/profile";
@@ -105,7 +105,7 @@ export default function ProfilePage() {
                 maxLength={30}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
               />
-              <p className="text-xs text-gray-400 mt-1.5">Keep it appropriate — this is visible to other students.</p>
+              <p className="text-xs text-gray-400 mt-1.5">Keep it appropriate â€” this is visible to other students.</p>
             </div>
 
             {/* Year */}
@@ -128,7 +128,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Program — grouped by campus */}
+            {/* Program â€” grouped by campus */}
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Program</label>
               <select
@@ -138,7 +138,7 @@ export default function ProfilePage() {
               >
                 <option value="">Select your program</option>
                 {Object.entries(PROGRAMS).map(([campus, programs]) => (
-                  <optgroup key={campus} label={`── ${campus} ──`}>
+                  <optgroup key={campus} label={`â”€â”€ ${campus} â”€â”€`}>
                     {programs.map((p) => (
                       <option key={p} value={`${p} (${campus})`}>{p}</option>
                     ))}
@@ -158,7 +158,7 @@ export default function ProfilePage() {
               <textarea
                 value={form.bio}
                 onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                placeholder="e.g. CS + Stats double major · looking for study partners for MAT237"
+                placeholder="e.g. CS + Stats double major Â· looking for study partners for MAT237"
                 rows={3}
                 maxLength={150}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
@@ -172,7 +172,7 @@ export default function ProfilePage() {
                 disabled={!form.displayName.trim()}
                 className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40"
               >
-                {profile ? "Save Changes" : "Create Profile →"}
+                {profile ? "Save Changes" : "Create Profile â†’"}
               </button>
               {profile && (
                 <button
@@ -198,7 +198,7 @@ export default function ProfilePage() {
           <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Profile</p>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight">{profile.displayName}</h1>
           {(profile.year || profile.program) && (
-            <p className="text-white/50 mt-2">{[profile.year, profile.program].filter(Boolean).join(" · ")}</p>
+            <p className="text-white/50 mt-2">{[profile.year, profile.program].filter(Boolean).join(" Â· ")}</p>
           )}
         </div>
       </div>
@@ -216,7 +216,7 @@ export default function ProfilePage() {
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
           <p className="text-xs font-bold text-amber-800 mb-1">Community Guidelines</p>
           <p className="text-amber-700 text-xs leading-relaxed">
-            Your display name is visible across all chats and study sessions. Keep it respectful — accounts that misuse the platform can be reported.
+            Your display name is visible across all chats and study sessions. Keep it respectful â€” accounts that misuse the platform can be reported.
           </p>
         </div>
 

@@ -1,14 +1,14 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
-// ── types ─────────────────────────────────────────────────────────────────────
+// â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type Deadline = { id: string; title: string; date: string; type: string; weight: string; course: string };
 type Component = { id: string; name: string; weight: number; grade: number | null };
 
 type Tab = "deadlines" | "grades";
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// â”€â”€ helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function urgencyColor(dateStr: string) {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return "bg-gray-100 text-gray-500 border-gray-200";
@@ -38,7 +38,7 @@ const TYPE_COLORS: Record<string, string> = {
   other: "bg-gray-100 text-gray-600",
 };
 
-// ── component ──────────────────────────────────────────────────────────────────
+// â”€â”€ component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function ToolsPage() {
   const [tab, setTab] = useState<Tab>("deadlines");
 
@@ -68,7 +68,7 @@ export default function ToolsPage() {
   ]);
   const [newCourseName, setNewCourseName] = useState("");
 
-  // ── deadline functions ──────────────────────────────────────────────────────
+  // â”€â”€ deadline functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function extractDeadlines() {
     if (!syllabus.trim()) { setExtractError("Paste your syllabus first."); return; }
     setExtracting(true); setExtractError("");
@@ -107,7 +107,7 @@ export default function ToolsPage() {
     return da - db;
   });
 
-  // ── grade functions ─────────────────────────────────────────────────────────
+  // â”€â”€ grade functions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function updateGrade(courseId: string, compId: string, val: string) {
     const n = val === "" ? null : Math.min(100, Math.max(0, parseFloat(val)));
     setCourses((prev) => prev.map((c) =>
@@ -174,7 +174,7 @@ export default function ToolsPage() {
         <div className="max-w-4xl mx-auto">
           <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Student Tools</p>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight mb-2">Student Tools</h1>
-          <p className="text-white/50 text-sm">Track deadlines and calculate your grades — all in one place.</p>
+          <p className="text-white/50 text-sm">Track deadlines and calculate your grades â€” all in one place.</p>
         </div>
       </div>
 
@@ -194,7 +194,7 @@ export default function ToolsPage() {
           ))}
         </div>
 
-        {/* ── DEADLINE TRACKER ── */}
+        {/* â”€â”€ DEADLINE TRACKER â”€â”€ */}
         {tab === "deadlines" && (
           <div className="space-y-4">
             {/* AI extraction */}
@@ -204,7 +204,7 @@ export default function ToolsPage() {
               <textarea
                 value={syllabus}
                 onChange={(e) => setSyllabus(e.target.value)}
-                placeholder="Paste your syllabus here…"
+                placeholder="Paste your syllabus hereâ€¦"
                 rows={5}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C] mb-3"
               />
@@ -216,7 +216,7 @@ export default function ToolsPage() {
                   className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   {extracting ? (
-                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Scanning…</>
+                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Scanningâ€¦</>
                   ) : "Extract Deadlines with AI"}
                 </button>
                 <button
@@ -251,8 +251,8 @@ export default function ToolsPage() {
             <div className="space-y-2">
               {sortedDeadlines.length === 0 ? (
                 <div className="bg-white border border-gray-100 rounded-2xl text-center py-14 text-gray-300">
-                  <p className="text-3xl mb-2">📅</p>
-                  <p className="text-sm">No deadlines yet — paste your syllabus above</p>
+                  <p className="text-3xl mb-2">ðŸ“…</p>
+                  <p className="text-sm">No deadlines yet â€” paste your syllabus above</p>
                 </div>
               ) : (
                 sortedDeadlines.map((d) => (
@@ -264,11 +264,11 @@ export default function ToolsPage() {
                       <p className="font-bold text-sm text-black truncate">{d.title}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {d.course && <span className="text-xs font-mono text-gray-400">{d.course}</span>}
-                        {d.weight && <span className="text-xs text-gray-400">· {d.weight}</span>}
+                        {d.weight && <span className="text-xs text-gray-400">Â· {d.weight}</span>}
                       </div>
                     </div>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${TYPE_COLORS[d.type] ?? TYPE_COLORS.other}`}>{d.type}</span>
-                    <button onClick={() => removeDeadline(d.id)} className="text-gray-300 hover:text-red-400 transition-colors text-lg shrink-0">×</button>
+                    <button onClick={() => removeDeadline(d.id)} className="text-gray-300 hover:text-red-400 transition-colors text-lg shrink-0">Ã—</button>
                   </div>
                 ))
               )}
@@ -276,7 +276,7 @@ export default function ToolsPage() {
           </div>
         )}
 
-        {/* ── GRADE CALCULATOR ── */}
+        {/* â”€â”€ GRADE CALCULATOR â”€â”€ */}
         {tab === "grades" && (
           <div className="space-y-4">
             {courses.map((course) => {
@@ -307,13 +307,13 @@ export default function ToolsPage() {
                     <div className="px-5 py-4 text-center">
                       <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Current</p>
                       <p className={`text-2xl font-black ${gradeColor(current)}`}>
-                        {current !== null ? `${current.toFixed(1)}%` : "—"}
+                        {current !== null ? `${current.toFixed(1)}%` : "â€”"}
                       </p>
                     </div>
                     <div className="px-5 py-4 text-center">
                       <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Needed</p>
                       <p className={`text-2xl font-black ${needed !== null ? gradeColor(needed) : "text-gray-300"}`}>
-                        {needed !== null ? (needed > 100 ? "Impossible" : needed < 0 ? "Done!" : `${needed.toFixed(1)}%`) : "—"}
+                        {needed !== null ? (needed > 100 ? "Impossible" : needed < 0 ? "Done!" : `${needed.toFixed(1)}%`) : "â€”"}
                       </p>
                     </div>
                     <div className="px-5 py-4 text-center">
@@ -349,7 +349,7 @@ export default function ToolsPage() {
                           placeholder="Grade"
                           className={`w-20 border rounded-xl px-2 py-2 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-[#002A5C] ${comp.grade !== null ? gradeColor(comp.grade).replace("text-", "border-").replace("[#1a8c4e]", "green-300").replace("[#F0B429]", "yellow-300").replace("red-500", "red-300") : "border-gray-200"}`}
                         />
-                        <button onClick={() => setCourses((prev) => prev.map((c) => c.id === course.id ? { ...c, components: c.components.filter((x) => x.id !== comp.id) } : c))} className="text-gray-300 hover:text-red-400 transition-colors">×</button>
+                        <button onClick={() => setCourses((prev) => prev.map((c) => c.id === course.id ? { ...c, components: c.components.filter((x) => x.id !== comp.id) } : c))} className="text-gray-300 hover:text-red-400 transition-colors">Ã—</button>
                       </div>
                     ))}
                     <button onClick={() => addComponent(course.id)} className="text-xs text-[#002A5C] font-semibold hover:text-black transition-colors mt-1">+ Add component</button>

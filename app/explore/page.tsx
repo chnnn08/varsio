@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -149,10 +149,10 @@ export default function ExplorePage() {
                 <div>
                   <p className="text-sm text-gray-700">
                     <span className="font-semibold text-[#002A5C]">Have</span> {s.have}
-                    <span className="text-gray-300 mx-2">·</span>
+                    <span className="text-gray-300 mx-2">Â·</span>
                     <span className="font-semibold text-[#002A5C]">Want</span> {s.want}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">{s.name} · {s.posted}</p>
+                  <p className="text-xs text-gray-400 mt-1">{s.name} Â· {s.posted}</p>
                 </div>
                 <button className="text-xs font-bold text-[#002A5C] border border-[#002A5C]/20 px-3 py-1.5 rounded-lg hover:bg-[#002A5C] hover:text-white transition-all">
                   Contact
@@ -203,7 +203,7 @@ export default function ExplorePage() {
                 <p className="text-xs text-gray-400 font-mono mt-0.5">{p.course}</p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xs text-amber-400 font-bold">{"★".repeat(Math.round(p.rating))}{"☆".repeat(5 - Math.round(p.rating))}</p>
+                <p className="text-xs text-amber-400 font-bold">{"â˜…".repeat(Math.round(p.rating))}{"â˜†".repeat(5 - Math.round(p.rating))}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{p.reviews} reviews</p>
               </div>
               <div className="text-right shrink-0 w-16">

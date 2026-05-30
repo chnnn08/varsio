@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+﻿import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
     const prompt = `You are a study assistant. Generate exactly 5 multiple-choice quiz questions from the study material below.
 
-Return ONLY a valid JSON array — no markdown, no explanation, no extra text.
+Return ONLY a valid JSON array â€” no markdown, no explanation, no extra text.
 Format:
 [
   {
