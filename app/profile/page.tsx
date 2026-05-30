@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getProfile, saveProfile, clearProfile, type Profile } from "@/lib/profile";
+import Link from "next/link";
+import { getProfile, saveProfile, clearProfile, registerPublicProfile, type Profile } from "@/lib/profile";
 
 const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year", "Graduate", "Alumni"];
 
@@ -88,6 +89,7 @@ export default function ProfilePage() {
   // connections state
   const [connInput, setConnInput] = useState("");
   const [connError, setConnError] = useState("");
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const router = useRouter();
 
@@ -96,10 +98,19 @@ export default function ProfilePage() {
     if (p) {
       setProfile(p);
       setForm({ displayName: p.displayName, year: p.year, programs: p.programs ?? [], bio: p.bio, avatar: p.avatar ?? "#002A5C" });
+      registerPublicProfile(p); // keep public store up to date
     } else {
       setEditing(true);
     }
   }, []);
+
+  function copyProfileLink() {
+    if (!profile) return;
+    const url = `${window.location.origin}/profile/${encodeURIComponent(profile.displayName)}`;
+    navigator.clipboard.writeText(url);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  }
 
   function toggleProgram(prog: string) {
     setForm((f) => ({
@@ -391,15 +402,18 @@ export default function ProfilePage() {
             <div className="space-y-2">
               {profile.connections.map((name) => (
                 <div key={name} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-gray-50 rounded-xl">
-                  <div className="flex items-center gap-2.5">
+                  <Link
+                    href={`/profile/${encodeURIComponent(name)}`}
+                    className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                  >
                     <div className="w-8 h-8 rounded-lg bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0">
                       {name[0].toUpperCase()}
                     </div>
-                    <span className="text-sm font-semibold text-black">{name}</span>
-                  </div>
+                    <span className="text-sm font-semibold text-black truncate">{name}</span>
+                  </Link>
                   <button
                     onClick={() => removeConnection(name)}
-                    className="text-xs text-gray-300 hover:text-red-400 transition-colors font-semibold"
+                    className="text-xs text-gray-300 hover:text-red-400 transition-colors font-semibold shrink-0"
                   >
                     Remove
                   </button>
@@ -407,6 +421,22 @@ export default function ProfilePage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Share profile */}
+        <div className="bg-[#002A5C]/5 border border-[#002A5C]/10 rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold text-[#002A5C] mb-0.5">Your public profile</p>
+            <p className="text-xs text-gray-400 font-mono truncate">
+              varsio.vercel.app/profile/{profile.displayName}
+            </p>
+          </div>
+          <button
+            onClick={copyProfileLink}
+            className={`text-xs font-bold px-4 py-2 rounded-xl shrink-0 transition-all ${linkCopied ? "bg-[#1a8c4e] text-white" : "bg-[#002A5C] text-white hover:bg-black"}`}
+          >
+            {linkCopied ? "Copied!" : "Share"}
+          </button>
         </div>
 
         {/* Community guidelines */}

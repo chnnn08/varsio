@@ -292,11 +292,11 @@ function ChatInner() {
                   {/* Post header */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0">
+                      <Link href={`/profile/${encodeURIComponent(p.author)}`} className="w-8 h-8 rounded-xl bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity">
                         {p.author[0].toUpperCase()}
-                      </div>
+                      </Link>
                       <div>
-                        <span className="text-sm font-bold text-[#002A5C]">{p.author}</span>
+                        <Link href={`/profile/${encodeURIComponent(p.author)}`} className="text-sm font-bold text-[#002A5C] hover:underline">{p.author}</Link>
                         <span className="text-xs text-gray-300 ml-2">{p.time}</span>
                       </div>
                     </div>
