@@ -4,6 +4,8 @@ export type Profile = {
   year: string;
   programs: string[];
   bio: string;
+  avatar: string;       // hex color for avatar bg
+  connections: string[]; // display names of added connections
 };
 
 const KEY = "arbor_profile";
@@ -12,7 +14,12 @@ export function getProfile(): Profile | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const p = JSON.parse(raw) as Profile;
+    // backfill older profiles that lack new fields
+    if (!p.avatar) p.avatar = "#002A5C";
+    if (!p.connections) p.connections = [];
+    return p;
   } catch {
     return null;
   }

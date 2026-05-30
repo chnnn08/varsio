@@ -37,6 +37,17 @@ type View = "list" | "create" | "session";
 type SessionTab = "materials" | "quiz" | "chat";
 type QuizState = "idle" | "generating" | "ready" | "taking" | "done";
 
+// -- persistence helpers -------------------------------------------------------
+function persistSessions(s: Record<string, StudySession>) {
+  try { localStorage.setItem("varsio_sessions", JSON.stringify(s)); } catch {}
+}
+function loadSessions(): Record<string, StudySession> {
+  try {
+    const raw = localStorage.getItem("varsio_sessions");
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
 // -- in-memory store -----------------------------------------------------------
 const SESSIONS: Record<string, StudySession> = {
   demo1: {
@@ -79,7 +90,12 @@ function generateCode() {
 export default function StudyPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [view, setView] = useState<View>("list");
-  const [sessions, setSessions] = useState<Record<string, StudySession>>(SESSIONS);
+  const [sessions, setSessions] = useState<Record<string, StudySession>>(() => {
+    const saved = loadSessions();
+    const merged = { ...SESSIONS, ...saved };
+    Object.assign(SESSIONS, merged);
+    return merged;
+  });
   const [activeSession, setActiveSession] = useState<StudySession | null>(null);
   const [tab, setTab] = useState<SessionTab>("materials");
 
@@ -134,14 +150,26 @@ export default function StudyPage() {
       hostName: profile.displayName, isPublic,
       participants: [profile.displayName], materials: "", quizzes: [], messages: [],
     };
-    setSessions((prev) => ({ ...prev, [id]: session }));
+    const next = { ...sessions, [id]: session };
+    updateSessions(next);
     setTitle(""); setSubject(""); setIsPublic(true); setFormError("");
     openSession(session);
   }
 
+  function updateSessions(updated: Record<string, StudySession>) {
+    setSessions(updated);
+    persistSessions(updated);
+  }
+
   function joinPrivate() {
     const code = joinCodeInput.trim().toUpperCase();
-    const session = Object.values(sessions).find((s) => s.code === code);
+    // check current state AND localStorage (in case created in another tab)
+    let session = Object.values(sessions).find((s) => s.code === code);
+    if (!session) {
+      const saved = loadSessions();
+      session = Object.values(saved).find((s) => s.code === code);
+      if (session) updateSessions({ ...sessions, ...saved });
+    }
     if (!session) { setFormError("Room not found."); return; }
     setJoinCodeInput(""); setFormError("");
     openSession(session);

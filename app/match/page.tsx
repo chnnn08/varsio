@@ -18,6 +18,23 @@ function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+function persistRooms() {
+  try { localStorage.setItem("varsio_rooms", JSON.stringify(ROOMS)); } catch {}
+}
+
+function hydrateRooms() {
+  try {
+    const raw = localStorage.getItem("varsio_rooms");
+    if (raw) Object.assign(ROOMS, JSON.parse(raw));
+  } catch {}
+}
+
+function findRoom(code: string): Room | undefined {
+  if (ROOMS[code]) return ROOMS[code];
+  hydrateRooms();
+  return ROOMS[code];
+}
+
 // Extract UofT-style course codes from OCR text
 function extractCourses(text: string): CourseEntry[] {
   const codePattern = /\b([A-Z]{2,4}\d{3}[HY]\d)\b/g;
@@ -153,14 +170,17 @@ function MatchPageInner() {
     if (courses.length === 0) { setError("Add at least one course."); return; }
     if (mode === "join") {
       const code = joinCode.trim().toUpperCase();
-      if (!ROOMS[code]) { setError("Room not found. Check the code."); return; }
-      ROOMS[code].members.push({ name: name.trim(), courses });
-      setRoom({ ...ROOMS[code] });
+      const found = findRoom(code);
+      if (!found) { setError("Room not found. Check the code."); return; }
+      found.members.push({ name: name.trim(), courses });
+      persistRooms();
+      setRoom({ ...found });
       setRoomCode(code);
     } else {
       const code = generateCode();
       const newRoom: Room = { code, members: [{ name: name.trim(), courses }] };
       ROOMS[code] = newRoom;
+      persistRooms();
       setRoom(newRoom);
       setRoomCode(code);
     }

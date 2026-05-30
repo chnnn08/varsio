@@ -6,6 +6,11 @@ import { getProfile, saveProfile, clearProfile, type Profile } from "@/lib/profi
 
 const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year", "Graduate", "Alumni"];
 
+const AVATAR_COLORS = [
+  "#002A5C", "#1a8c4e", "#7c3aed", "#dc2626",
+  "#0891b2", "#be185d", "#92400e", "#374151",
+];
+
 const PROGRAMS: Record<string, string[]> = {
   "St. George (UTSG)": [
     "Accounting", "Anthropology", "Architecture", "Art History",
@@ -60,19 +65,40 @@ function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
+function Avatar({ name, color, size = "lg" }: { name: string; color: string; size?: "sm" | "lg" }) {
+  const cls = size === "lg"
+    ? "w-20 h-20 rounded-2xl text-2xl font-black"
+    : "w-10 h-10 rounded-xl text-sm font-black";
+  return (
+    <div className={`${cls} text-white flex items-center justify-center`} style={{ backgroundColor: color }}>
+      {initials(name)}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ displayName: "", year: "", programs: [] as string[], bio: "" });
+  const [form, setForm] = useState({
+    displayName: "", year: "", programs: [] as string[], bio: "", avatar: "#002A5C",
+  });
   const [saved, setSaved] = useState(false);
   const [openCampus, setOpenCampus] = useState<string | null>("St. George (UTSG)");
+
+  // connections state
+  const [connInput, setConnInput] = useState("");
+  const [connError, setConnError] = useState("");
+
   const router = useRouter();
-  const isNewProfile = !profile;
 
   useEffect(() => {
     const p = getProfile();
-    if (p) { setProfile(p); setForm({ ...p, programs: p.programs ?? [] }); }
-    else setEditing(true);
+    if (p) {
+      setProfile(p);
+      setForm({ displayName: p.displayName, year: p.year, programs: p.programs ?? [], bio: p.bio, avatar: p.avatar ?? "#002A5C" });
+    } else {
+      setEditing(true);
+    }
   }, []);
 
   function toggleProgram(prog: string) {
@@ -86,14 +112,16 @@ export default function ProfilePage() {
 
   function handleSave() {
     if (!form.displayName.trim()) return;
+    const isNew = !profile;
     const p: Profile = {
       id: profile?.id ?? crypto.randomUUID(),
       displayName: form.displayName.trim(),
       year: form.year,
       programs: form.programs,
       bio: form.bio.trim(),
+      avatar: form.avatar,
+      connections: profile?.connections ?? [],
     };
-    const isNew = !profile;
     saveProfile(p);
     setProfile(p);
     setEditing(false);
@@ -108,10 +136,37 @@ export default function ProfilePage() {
   function handleDelete() {
     clearProfile();
     setProfile(null);
-    setForm({ displayName: "", year: "", programs: [], bio: "" });
+    setForm({ displayName: "", year: "", programs: [], bio: "", avatar: "#002A5C" });
     setEditing(true);
   }
 
+  function addConnection() {
+    const name = connInput.trim();
+    if (!name) return;
+    if (!profile) return;
+    if (name.toLowerCase() === profile.displayName.toLowerCase()) {
+      setConnError("That's you.");
+      return;
+    }
+    if (profile.connections.includes(name)) {
+      setConnError("Already connected.");
+      return;
+    }
+    const updated: Profile = { ...profile, connections: [...profile.connections, name] };
+    saveProfile(updated);
+    setProfile(updated);
+    setConnInput("");
+    setConnError("");
+  }
+
+  function removeConnection(name: string) {
+    if (!profile) return;
+    const updated: Profile = { ...profile, connections: profile.connections.filter((c) => c !== name) };
+    saveProfile(updated);
+    setProfile(updated);
+  }
+
+  // -- edit view ---------------------------------------------------------------
   if (editing) {
     return (
       <div>
@@ -125,13 +180,28 @@ export default function ProfilePage() {
           </div>
         </div>
         <div className="max-w-lg mx-auto px-6 py-10">
+
+          {/* Avatar preview */}
           <div className="flex justify-center mb-8">
-            <div className="w-20 h-20 rounded-2xl bg-[#002A5C] text-white flex items-center justify-center text-2xl font-black">
-              {form.displayName ? initials(form.displayName) : "?"}
-            </div>
+            <Avatar name={form.displayName || "?"} color={form.avatar} />
           </div>
 
           <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-5">
+
+            {/* Avatar color */}
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Avatar Color</label>
+              <div className="flex gap-2 flex-wrap">
+                {AVATAR_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setForm({ ...form, avatar: c })}
+                    className={`w-8 h-8 rounded-xl transition-all ${form.avatar === c ? "ring-2 ring-offset-2 ring-gray-600 scale-110" : "opacity-70 hover:opacity-100"}`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
 
             {/* Display name */}
             <div>
@@ -145,7 +215,7 @@ export default function ProfilePage() {
                 maxLength={30}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
               />
-              <p className="text-xs text-gray-400 mt-1.5">Keep it appropriate - this is visible to other students.</p>
+              <p className="text-xs text-gray-400 mt-1.5">Visible to other students across all features.</p>
             </div>
 
             {/* Year */}
@@ -168,28 +238,21 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Programs - multi select */}
+            {/* Programs */}
             <div>
               <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
                 Program <span className="text-gray-300 normal-case font-normal">(select all that apply)</span>
               </label>
-
-              {/* Selected tags */}
               {form.programs.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-3">
                   {form.programs.map((p) => (
-                    <span
-                      key={p}
-                      className="inline-flex items-center gap-1.5 bg-[#002A5C] text-white text-xs font-semibold px-3 py-1.5 rounded-full"
-                    >
+                    <span key={p} className="inline-flex items-center gap-1.5 bg-[#002A5C] text-white text-xs font-semibold px-3 py-1.5 rounded-full">
                       {p}
                       <button onClick={() => toggleProgram(p)} className="hover:text-white/60 transition-colors">&times;</button>
                     </span>
                   ))}
                 </div>
               )}
-
-              {/* Campus sections */}
               <div className="border border-gray-200 rounded-xl overflow-hidden">
                 {Object.entries(PROGRAMS).map(([campus, programs], i) => (
                   <div key={campus} className={i > 0 ? "border-t border-gray-200" : ""}>
@@ -270,6 +333,7 @@ export default function ProfilePage() {
 
   if (!profile) return null;
 
+  // -- view mode ---------------------------------------------------------------
   return (
     <div>
       <div className="bg-[#002A5C] text-white pt-14 pb-16 px-4 sm:px-6">
@@ -283,21 +347,73 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-      <div className="max-w-lg mx-auto px-6 py-10">
-        <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center mb-4">
-          <div className="w-20 h-20 rounded-2xl bg-[#002A5C] text-white flex items-center justify-center text-2xl font-black mx-auto mb-4">
-            {initials(profile.displayName)}
+
+      <div className="max-w-lg mx-auto px-6 py-10 space-y-4">
+
+        {/* Profile card */}
+        <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center">
+          <div className="flex justify-center mb-4">
+            <Avatar name={profile.displayName} color={profile.avatar ?? "#002A5C"} />
           </div>
           {profile.bio && (
-            <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">{profile.bio}</p>
+            <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed mb-2">{profile.bio}</p>
           )}
-          {saved && <p className="text-green-600 text-xs font-semibold mt-4">Profile saved</p>}
+          {saved && <p className="text-green-600 text-xs font-semibold mt-2">Profile saved</p>}
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+        {/* Connections */}
+        <div className="bg-white border border-gray-100 rounded-2xl p-6">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+            Connections <span className="font-normal normal-case text-gray-300 ml-1">({profile.connections.length})</span>
+          </p>
+
+          {/* Add connection */}
+          <div className="flex gap-2 mb-4">
+            <input
+              value={connInput}
+              onChange={(e) => { setConnInput(e.target.value); setConnError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && addConnection()}
+              placeholder="Enter a display name to connect"
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+            />
+            <button
+              onClick={addConnection}
+              className="bg-[#002A5C] text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-black transition-colors shrink-0"
+            >
+              Add
+            </button>
+          </div>
+          {connError && <p className="text-red-500 text-xs mb-3 font-medium">{connError}</p>}
+
+          {profile.connections.length === 0 ? (
+            <p className="text-xs text-gray-300 text-center py-4">No connections yet. Add friends by their display name.</p>
+          ) : (
+            <div className="space-y-2">
+              {profile.connections.map((name) => (
+                <div key={name} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0">
+                      {name[0].toUpperCase()}
+                    </div>
+                    <span className="text-sm font-semibold text-black">{name}</span>
+                  </div>
+                  <button
+                    onClick={() => removeConnection(name)}
+                    className="text-xs text-gray-300 hover:text-red-400 transition-colors font-semibold"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Community guidelines */}
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
           <p className="text-xs font-bold text-amber-800 mb-1">Community Guidelines</p>
           <p className="text-amber-700 text-xs leading-relaxed">
-            Your display name is visible across all chats and study sessions. Keep it respectful - accounts that misuse the platform can be reported.
+            Your display name is visible across all chats and study sessions. Keep it respectful.
           </p>
         </div>
 

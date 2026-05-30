@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { getProfile, type Profile } from "@/lib/profile";
 import Link from "next/link";
 
@@ -65,7 +66,7 @@ const INITIAL_THREADS: Thread[] = [
   },
 ];
 
-export default function ChatPage() {
+function ChatInner() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [threads, setThreads] = useState<Thread[]>(INITIAL_THREADS);
   const [activeCourse, setActiveCourse] = useState("CSC108H1");
@@ -74,8 +75,31 @@ export default function ChatPage() {
   const [search, setSearch] = useState("");
   const [replyInputs, setReplyInputs] = useState<Record<number, string>>({});
   const [sort, setSort] = useState<"top" | "new">("top");
+  const [linkCopied, setLinkCopied] = useState(false);
+  const searchParams = useSearchParams();
 
-  useEffect(() => { setProfile(getProfile()); }, []);
+  useEffect(() => {
+    setProfile(getProfile());
+    const course = searchParams.get("course");
+    if (course) {
+      const found = INITIAL_THREADS.find((t) => t.course === course.toUpperCase());
+      if (found) setActiveCourse(found.course);
+      else {
+        setThreads((prev) => {
+          if (prev.find((t) => t.course === course.toUpperCase())) return prev;
+          return [...prev, { course: course.toUpperCase(), posts: [] }];
+        });
+        setActiveCourse(course.toUpperCase());
+      }
+    }
+  }, [searchParams]);
+
+  function copyLink() {
+    const url = `${window.location.origin}/chat?course=${activeCourse}`;
+    navigator.clipboard.writeText(url);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  }
 
   const activeThread = threads.find((t) => t.course === activeCourse);
   const filtered = threads.filter((t) => t.course.includes(search.toUpperCase()));
@@ -230,6 +254,13 @@ export default function ChatPage() {
             <h1 className="font-black text-[#002A5C] text-lg font-mono">{activeCourse}</h1>
             <p className="text-xs text-gray-400 mt-0.5">{visiblePosts.length} post{visiblePosts.length !== 1 ? "s" : ""} · cleared end of semester</p>
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={copyLink}
+              className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${linkCopied ? "bg-green-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+            >
+              {linkCopied ? "Copied!" : "Share"}
+            </button>
           {/* Sort toggle */}
           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
             {(["top", "new"] as const).map((s) => (
@@ -243,6 +274,7 @@ export default function ChatPage() {
                 {s === "top" ? "Top" : "New"}
               </button>
             ))}
+          </div>
           </div>
         </div>
 
@@ -403,5 +435,13 @@ export default function ChatPage() {
       </div>
     </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatInner />
+    </Suspense>
   );
 }
