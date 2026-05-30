@@ -1,10 +1,11 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   title: {
-    default: "Varsio â€” Student Platform for University of Toronto",
+    default: "Varsio - Student Platform for University of Toronto",
     template: "%s | Varsio",
   },
   description:
@@ -20,14 +21,14 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://varsio.vercel.app",
     siteName: "Varsio",
-    title: "Varsio â€” Student Platform for University of Toronto",
+    title: "Varsio - Student Platform for University of Toronto",
     description:
       "Match courses with friends, run AI study sessions, and access tools built for UofT students across all three campuses.",
     locale: "en_CA",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Varsio â€” Student Platform for University of Toronto",
+    title: "Varsio - Student Platform for University of Toronto",
     description:
       "Match courses with friends, run AI study sessions, and access tools built for UofT students across all three campuses.",
     creator: "@varsio",
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <p className="text-sm text-gray-400">Built by students, for students &middot; University of Toronto</p>
           </div>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
