@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getProfile } from "@/lib/profile";
 
 const links = [
   { href: "/match", label: "Match" },
@@ -23,9 +24,19 @@ function VarsioIcon() {
   );
 }
 
+function initials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [profileName, setProfileName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const p = getProfile();
+    if (p?.displayName) setProfileName(p.displayName);
+  }, [pathname]);
 
   return (
     <nav className="bg-[#002A5C] sticky top-0 z-50 border-b border-white/8">
@@ -58,13 +69,9 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-2">
           <Link
             href="/profile"
-            className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
-              pathname === "/profile"
-                ? "bg-[#F0B429] text-[#002A5C]"
-                : "bg-[#F0B429] text-[#002A5C] hover:bg-yellow-400"
-            }`}
+            className="bg-[#F0B429] text-[#002A5C] text-xs font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition-all"
           >
-            {pathname === "/profile" ? "Profile" : "Get Started"}
+            {profileName ? initials(profileName) : "Get Started"}
           </Link>
         </div>
 
@@ -73,11 +80,9 @@ export default function Navbar() {
           <Link
             href="/profile"
             onClick={() => setOpen(false)}
-            className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black transition-all ${
-              pathname === "/profile" ? "bg-[#F0B429] text-[#002A5C]" : "bg-white/15 text-white"
-            }`}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black bg-[#F0B429] text-[#002A5C] transition-all hover:bg-yellow-400"
           >
-            P
+            {profileName ? initials(profileName) : "?"}
           </Link>
           <button
             onClick={() => setOpen(!open)}
