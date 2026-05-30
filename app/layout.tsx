@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     canonical: "https://varsio.netlify.app",
   },
   verification: {
-    google: "2749da70816f15e7",
+    google: "iR84YbhiR-KJYriX-IwYTvAT85Ap_sZ_YGafoOSmeGo",
   },
 };
 
