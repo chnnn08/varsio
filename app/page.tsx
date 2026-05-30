@@ -112,7 +112,7 @@ const miniFeatures = [
       </svg>
     ),
     title: "Course Chat",
-    desc: "Profile-based threads for every course. Ask questions, find study partners — with full accountability.",
+    desc: "Post questions, find study partners, and talk by course. Everyone's tied to a real profile.",
     href: "/chat",
   },
   {
@@ -122,7 +122,7 @@ const miniFeatures = [
       </svg>
     ),
     title: "Explore",
-    desc: "Course connections graph, section swap board, open study spaces, and professor ratings.",
+    desc: "See which courses connect, find open study spots, swap sections, and check prof ratings.",
     href: "/explore",
   },
   {
@@ -132,7 +132,7 @@ const miniFeatures = [
       </svg>
     ),
     title: "Student Tools",
-    desc: "AI deadline tracker, grade calculator, and syllabus scanner — built for UofT's course structure.",
+    desc: "Track deadlines, calculate your grade, and scan your syllabus. Built around how UofT actually works.",
     href: "/tools",
   },
   {
@@ -142,7 +142,7 @@ const miniFeatures = [
       </svg>
     ),
     title: "Marketplace",
-    desc: "Find peer tutors or buy and sell textbooks — all within the UofT student community.",
+    desc: "Buy textbooks from someone who just finished the course. Find a tutor in your program.",
     href: "/marketplace",
   },
 ];
@@ -174,7 +174,7 @@ export default function Home() {
             <span className="text-[#F0B429]">UofT actually needed.</span>
           </h1>
           <p className="text-white/45 text-lg sm:text-xl max-w-xl mx-auto mb-10 leading-relaxed">
-            Match courses with friends, chat by course, and run AI-powered study sessions &mdash; all in one place, across all three campuses.
+            Match courses with your friends, see who's in every lecture, and study together with AI. All in one spot.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
@@ -217,7 +217,7 @@ export default function Home() {
               See exactly who&apos;s<br />in your courses.
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed mb-8">
-              Create a private room, share a 6-character code, and instantly see every course and section you have in common with your friends &mdash; across UTSG, UTM, and UTSC.
+              Drop in a code and instantly see every course and section you share with your friends. Works across UTSG, UTM, and UTSC.
             </p>
             <Link
               href="/match"
@@ -241,7 +241,7 @@ export default function Home() {
               Your study group,<br />supercharged.
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed mb-8">
-              Paste in your notes, invite friends, and let AI generate quizzes tailored to your material. Public or private rooms &mdash; study smarter, not harder.
+              Throw in your notes, call in your friends, and get AI to quiz you on the stuff that actually matters. Keep it private or open it up.
             </p>
             <Link
               href="/study"
@@ -272,9 +272,9 @@ export default function Home() {
       <section className="py-24 sm:py-32 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 mb-4">Everything else you need.</h2>
+            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 mb-4">The rest of the app.</h2>
             <p className="text-gray-400 text-lg max-w-md mx-auto">
-              Four more tools built around how UofT students actually work.
+              Four more tools built for how UofT students actually get through the year.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -380,12 +380,12 @@ export default function Home() {
         <div className="max-w-5xl mx-auto bg-[#002A5C] rounded-3xl py-20 sm:py-24 px-8 text-center text-white relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-[#F0B429]/5 via-transparent to-[#1a8c4e]/5 pointer-events-none" />
           <div className="relative">
-            <p className="text-xs font-bold text-white/35 uppercase tracking-widest mb-5">Start today &mdash; it&apos;s free</p>
+            <p className="text-xs font-bold text-white/35 uppercase tracking-widest mb-5">Free to join</p>
             <h2 className="text-4xl sm:text-5xl font-black mb-5 leading-[1.1]">
-              Your cohort is<br />already here.
+              Your people are<br />already on here.
             </h2>
             <p className="text-white/40 text-lg mb-10 max-w-sm mx-auto leading-relaxed">
-              Create a profile in under a minute and match courses with your friends.
+              Takes a minute to set up. Just pick your courses and share your code.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
