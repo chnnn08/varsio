@@ -1,10 +1,48 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "Varsio",
-  description: "Match courses, chat with peers, and explore UofT â€” across all three campuses.",
+  title: {
+    default: "Varsio — Student Platform for University of Toronto",
+    template: "%s | Varsio",
+  },
+  description:
+    "Varsio is the student super-app for UofT. Match courses with friends, run AI study sessions, chat by course, and access tools built for UTSG, UTM, and UTSC.",
+  keywords: [
+    "UofT", "University of Toronto", "student app", "course matcher",
+    "study sessions", "UTSG", "UTM", "UTSC", "UofT students", "Varsio",
+  ],
+  authors: [{ name: "Varsio" }],
+  creator: "Varsio",
+  metadataBase: new URL("https://varsio.netlify.app"),
+  openGraph: {
+    type: "website",
+    url: "https://varsio.netlify.app",
+    siteName: "Varsio",
+    title: "Varsio — Student Platform for University of Toronto",
+    description:
+      "Match courses with friends, run AI study sessions, and access tools built for UofT students across all three campuses.",
+    locale: "en_CA",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Varsio — Student Platform for University of Toronto",
+    description:
+      "Match courses with friends, run AI study sessions, and access tools built for UofT students across all three campuses.",
+    creator: "@varsio",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
+  alternates: {
+    canonical: "https://varsio.netlify.app",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -23,11 +61,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               </svg>
               <span className="text-sm font-semibold text-[#002A5C]">Varsio</span>
             </div>
-            <p className="text-sm text-gray-400">Built by students, for students · University of Toronto</p>
+            <div className="flex items-center gap-6 text-sm text-gray-400">
+              <a href="/match" className="hover:text-gray-600 transition-colors">Match</a>
+              <a href="/study" className="hover:text-gray-600 transition-colors">Study</a>
+              <a href="/chat" className="hover:text-gray-600 transition-colors">Chat</a>
+              <a href="/tools" className="hover:text-gray-600 transition-colors">Tools</a>
+              <a href="/marketplace" className="hover:text-gray-600 transition-colors">Marketplace</a>
+            </div>
+            <p className="text-sm text-gray-400">Built by students, for students &middot; University of Toronto</p>
           </div>
         </footer>
       </body>
     </html>
   );
 }
-
