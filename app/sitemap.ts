@@ -2,7 +2,7 @@
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://varsio.vercel.app";
-  const pages = ["/", "/match", "/study", "/chat", "/tools", "/marketplace", "/explore", "/profile"];
+  const pages = ["/", "/match", "/study", "/quiz", "/chat", "/tools", "/marketplace", "/explore", "/profile"];
   return pages.map((path) => ({
     url: `${base}${path}`,
     lastModified: new Date(),

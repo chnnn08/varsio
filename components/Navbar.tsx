@@ -8,6 +8,7 @@ import { getProfile } from "@/lib/profile";
 const links = [
   { href: "/match", label: "Match" },
   { href: "/study", label: "Study" },
+  { href: "/quiz", label: "Quiz" },
   { href: "/chat", label: "Chat" },
   { href: "/tools", label: "Tools" },
   { href: "/marketplace", label: "Marketplace" },
