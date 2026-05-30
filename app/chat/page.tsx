@@ -152,7 +152,7 @@ export default function ChatPage() {
         <div className="max-w-6xl mx-auto">
           <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Course Chat</p>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight mb-2">Community Chat.</h1>
-          <p className="text-white/50 text-lg">Profile-based threads for every course â€” with full accountability.</p>
+          <p className="text-white/50 text-lg">Profile-based threads for every course, with full accountability.</p>
         </div>
       </div>
 
@@ -228,7 +228,7 @@ export default function ChatPage() {
         <div className="bg-white border border-gray-100 rounded-2xl px-6 py-4 mb-3 flex items-center justify-between">
           <div>
             <h1 className="font-black text-[#002A5C] text-lg font-mono">{activeCourse}</h1>
-            <p className="text-xs text-gray-400 mt-0.5">{visiblePosts.length} post{visiblePosts.length !== 1 ? "s" : ""} Â· cleared end of semester</p>
+            <p className="text-xs text-gray-400 mt-0.5">{visiblePosts.length} post{visiblePosts.length !== 1 ? "s" : ""} · cleared end of semester</p>
           </div>
           {/* Sort toggle */}
           <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
@@ -250,7 +250,7 @@ export default function ChatPage() {
         <div className="space-y-3 mb-3">
           {visiblePosts.length === 0 ? (
             <div className="bg-white border border-gray-100 rounded-2xl text-center py-16 text-gray-300">
-              <p className="text-sm font-semibold">No posts yet â€” start the conversation</p>
+              <p className="text-sm font-semibold">No posts yet - start the conversation</p>
             </div>
           ) : (
             visiblePosts.map((p) => {
@@ -344,7 +344,7 @@ export default function ChatPage() {
                             value={replyInputs[p.id] ?? ""}
                             onChange={(e) => setReplyInputs((prev) => ({ ...prev, [p.id]: e.target.value }))}
                             onKeyDown={(e) => e.key === "Enter" && addReply(p.id)}
-                            placeholder="Write a replyâ€¦"
+                            placeholder="Write a reply..."
                             className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
                           />
                           <button
@@ -378,7 +378,7 @@ export default function ChatPage() {
                 value={postText}
                 onChange={(e) => setPostText(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addPost(); } }}
-                placeholder={`Post to ${activeCourse} as ${profile.displayName}â€¦`}
+                placeholder={`Post to ${activeCourse} as ${profile.displayName}...`}
                 rows={2}
                 className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
               />

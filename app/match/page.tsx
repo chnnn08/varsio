@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { createWorker } from "tesseract.js";
 
 // â”€â”€ types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -83,7 +84,16 @@ export default function MatchPage() {
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("welcome") === "1") {
+      setShowWelcome(true);
+      setTimeout(() => setShowWelcome(false), 5000);
+    }
+  }, [searchParams]);
 
   // â”€â”€ course helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function addCourse() {
@@ -221,7 +231,7 @@ export default function MatchPage() {
           ) : (
             <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 mb-4">
               <p className="text-[#002A5C] font-semibold text-sm">
-                Waiting for friends Â· share code <span className="font-mono font-black">{roomCode}</span>
+                Waiting for friends · share code <span className="font-mono font-black">{roomCode}</span>
               </p>
             </div>
           )}
@@ -258,6 +268,16 @@ export default function MatchPage() {
   if (step === "landing") {
     return (
       <div className="min-h-screen bg-[#F4F6F9]">
+        {/* Welcome banner */}
+        {showWelcome && (
+          <div className="bg-[#1a8c4e] text-white px-4 py-3 text-center text-sm font-semibold flex items-center justify-center gap-2">
+            <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            Profile created! Now add your courses and match with friends.
+            <button onClick={() => setShowWelcome(false)} className="ml-2 text-white/60 hover:text-white">&times;</button>
+          </div>
+        )}
         {/* Hero */}
         <div className="bg-[#002A5C] text-white pt-20 pb-24 px-6 text-center">
           <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-4">Course Matcher</p>
@@ -435,7 +455,7 @@ export default function MatchPage() {
                       <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                     </div>
                     <p className="text-sm font-semibold text-gray-700 mb-1">Drop your timetable screenshot here</p>
-                    <p className="text-xs text-gray-400 mb-3">or click to browse Â· PNG, JPG supported</p>
+                    <p className="text-xs text-gray-400 mb-3">or click to browse · PNG, JPG supported</p>
                     <p className="text-xs text-gray-300">Works best with ACORN or course calendar screenshots</p>
                   </div>
                 )}

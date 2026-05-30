@@ -149,10 +149,10 @@ export default function ExplorePage() {
                 <div>
                   <p className="text-sm text-gray-700">
                     <span className="font-semibold text-[#002A5C]">Have</span> {s.have}
-                    <span className="text-gray-300 mx-2">Â·</span>
+                    <span className="text-gray-300 mx-2">·</span>
                     <span className="font-semibold text-[#002A5C]">Want</span> {s.want}
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">{s.name} Â· {s.posted}</p>
+                  <p className="text-xs text-gray-400 mt-1">{s.name} · {s.posted}</p>
                 </div>
                 <button className="text-xs font-bold text-[#002A5C] border border-[#002A5C]/20 px-3 py-1.5 rounded-lg hover:bg-[#002A5C] hover:text-white transition-all">
                   Contact

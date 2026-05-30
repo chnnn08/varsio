@@ -174,7 +174,7 @@ export default function ToolsPage() {
         <div className="max-w-4xl mx-auto">
           <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Student Tools</p>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight mb-2">Student Tools</h1>
-          <p className="text-white/50 text-sm">Track deadlines and calculate your grades â€” all in one place.</p>
+          <p className="text-white/50 text-sm">Track deadlines and calculate your grades, all in one place.</p>
         </div>
       </div>
 
@@ -204,7 +204,7 @@ export default function ToolsPage() {
               <textarea
                 value={syllabus}
                 onChange={(e) => setSyllabus(e.target.value)}
-                placeholder="Paste your syllabus hereâ€¦"
+                placeholder="Paste your syllabus here..."
                 rows={5}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C] mb-3"
               />
@@ -216,7 +216,7 @@ export default function ToolsPage() {
                   className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
                 >
                   {extracting ? (
-                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Scanningâ€¦</>
+                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Scanning...</>
                   ) : "Extract Deadlines with AI"}
                 </button>
                 <button
@@ -251,8 +251,7 @@ export default function ToolsPage() {
             <div className="space-y-2">
               {sortedDeadlines.length === 0 ? (
                 <div className="bg-white border border-gray-100 rounded-2xl text-center py-14 text-gray-300">
-                  <p className="text-3xl mb-2">ðŸ“…</p>
-                  <p className="text-sm">No deadlines yet â€” paste your syllabus above</p>
+                  <p className=”text-sm”>No deadlines yet - paste your syllabus above</p>
                 </div>
               ) : (
                 sortedDeadlines.map((d) => (
@@ -264,7 +263,7 @@ export default function ToolsPage() {
                       <p className="font-bold text-sm text-black truncate">{d.title}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         {d.course && <span className="text-xs font-mono text-gray-400">{d.course}</span>}
-                        {d.weight && <span className="text-xs text-gray-400">Â· {d.weight}</span>}
+                        {d.weight && <span className="text-xs text-gray-400">· {d.weight}</span>}
                       </div>
                     </div>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full capitalize ${TYPE_COLORS[d.type] ?? TYPE_COLORS.other}`}>{d.type}</span>
@@ -307,13 +306,13 @@ export default function ToolsPage() {
                     <div className="px-5 py-4 text-center">
                       <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Current</p>
                       <p className={`text-2xl font-black ${gradeColor(current)}`}>
-                        {current !== null ? `${current.toFixed(1)}%` : "â€”"}
+                        {current !== null ? `${current.toFixed(1)}%` : “-”}
                       </p>
                     </div>
                     <div className="px-5 py-4 text-center">
                       <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Needed</p>
                       <p className={`text-2xl font-black ${needed !== null ? gradeColor(needed) : "text-gray-300"}`}>
-                        {needed !== null ? (needed > 100 ? "Impossible" : needed < 0 ? "Done!" : `${needed.toFixed(1)}%`) : "â€”"}
+                        {needed !== null ? (needed > 100 ? "Impossible" : needed < 0 ? "Done!" : `${needed.toFixed(1)}%`) : “-”}
                       </p>
                     </div>
                     <div className="px-5 py-4 text-center">

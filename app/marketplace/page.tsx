@@ -116,7 +116,7 @@ export default function MarketplacePage() {
           <div>
             <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Marketplace</p>
             <h1 className="text-4xl sm:text-5xl font-black tracking-tight mb-2">Marketplace</h1>
-            <p className="text-white/50 text-sm">Find tutors, buy and sell textbooks â€” within the UofT community.</p>
+            <p className="text-white/50 text-sm">Find tutors, buy and sell textbooks within the UofT community.</p>
           </div>
           {tab === "tutoring" ? (
             <button onClick={() => setShowTutorForm(!showTutorForm)} className="shrink-0 bg-[#F0B429] text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-yellow-400 transition-colors">
@@ -168,7 +168,7 @@ export default function MarketplacePage() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Bio</label>
-                    <textarea value={tutorForm.bio} onChange={(e) => setTutorForm({ ...tutorForm, bio: e.target.value })} placeholder="Tell students about your background and teaching styleâ€¦" rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
+                    <textarea value={tutorForm.bio} onChange={(e) => setTutorForm({ ...tutorForm, bio: e.target.value })} placeholder="Tell students about your background and teaching style..." rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
                   </div>
                   <button onClick={listAsTutor} disabled={!profileName} className="w-full bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40">
                     List as Tutor â†’
@@ -187,7 +187,7 @@ export default function MarketplacePage() {
             <input
               value={tutorSearch}
               onChange={(e) => setTutorSearch(e.target.value)}
-              placeholder="Search by course or name (e.g. CSC108H1)â€¦"
+              placeholder="Search by course or name (e.g. CSC108H1)..."
               className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
             />
 
@@ -257,7 +257,7 @@ export default function MarketplacePage() {
             <input
               value={bookSearch}
               onChange={(e) => setBookSearch(e.target.value)}
-              placeholder="Search by title or course codeâ€¦"
+              placeholder="Search by title or course code..."
               className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
             />
 

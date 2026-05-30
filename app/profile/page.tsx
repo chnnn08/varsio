@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getProfile, saveProfile, clearProfile, type Profile } from "@/lib/profile";
 
 const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year", "Graduate", "Alumni"];
@@ -65,6 +66,8 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ displayName: "", year: "", programs: [] as string[], bio: "" });
   const [saved, setSaved] = useState(false);
   const [openCampus, setOpenCampus] = useState<string | null>("St. George (UTSG)");
+  const router = useRouter();
+  const isNewProfile = !profile;
 
   useEffect(() => {
     const p = getProfile();
@@ -90,11 +93,16 @@ export default function ProfilePage() {
       programs: form.programs,
       bio: form.bio.trim(),
     };
+    const isNew = !profile;
     saveProfile(p);
     setProfile(p);
     setEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    if (isNew) {
+      router.push("/match?welcome=1");
+    } else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    }
   }
 
   function handleDelete() {

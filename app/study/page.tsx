@@ -42,7 +42,7 @@ const SESSIONS: Record<string, StudySession> = {
   demo1: {
     id: "demo1",
     code: "DEMO01",
-    title: "CSC148 â€” Trees & Recursion",
+    title: "CSC148 - Trees & Recursion",
     subject: "CSC148H1",
     hostName: "alex_cs",
     isPublic: true,
@@ -271,7 +271,7 @@ export default function StudyPage() {
                 <h1 className="text-xl font-black text-black">{activeSession.title}</h1>
                 <p className="text-sm text-gray-400 mt-0.5">
                   Hosted by <span className="font-semibold text-[#002A5C]">{activeSession.hostName}</span>
-                  {" Â· "}{activeSession.participants.length} participant{activeSession.participants.length !== 1 ? "s" : ""}
+                  {" · "}{activeSession.participants.length} participant{activeSession.participants.length !== 1 ? "s" : ""}
                 </p>
               </div>
               <span className="bg-[#002A5C]/8 text-[#002A5C] text-xs font-bold px-3 py-1.5 rounded-xl font-mono shrink-0">
@@ -303,7 +303,7 @@ export default function StudyPage() {
               <textarea
                 value={materialsText}
                 onChange={(e) => setMaterialsText(e.target.value)}
-                placeholder="Paste your study material here â€” lecture notes, textbook sections, problem setsâ€¦"
+                placeholder=”Paste your study material here - lecture notes, textbook sections, problem sets...”
                 rows={10}
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C] mb-4"
               />
@@ -316,7 +316,7 @@ export default function StudyPage() {
                 {quizState === "generating" ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Generating quiz with AIâ€¦
+                    Generating quiz with AI...
                   </>
                 ) : (
                   "Generate Quiz with AI â†’"
@@ -442,7 +442,6 @@ export default function StudyPage() {
               <div className="p-5 min-h-64 space-y-3 max-h-96 overflow-y-auto">
                 {activeSession.messages.length === 0 ? (
                   <div className="text-center py-12 text-gray-300">
-                    <p className="text-3xl mb-2">ðŸ’¬</p>
                     <p className="text-sm">No messages yet. Start the conversation.</p>
                   </div>
                 ) : (
@@ -466,7 +465,7 @@ export default function StudyPage() {
                           </button>
                         )}
                       </div>
-                      <p className="text-sm text-gray-700 ml-8">{m.reported ? "[Reported â€” under review]" : m.text}</p>
+                      <p className="text-sm text-gray-700 ml-8">{m.reported ? "[Reported - under review]" : m.text}</p>
                     </div>
                   ))
                 )}
@@ -476,7 +475,7 @@ export default function StudyPage() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                  placeholder={`Message as ${profile.displayName}â€¦`}
+                  placeholder={`Message as ${profile.displayName}...`}
                   className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
                 />
                 <button
@@ -574,7 +573,7 @@ export default function StudyPage() {
         <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Public Sessions</p>
         {publicSessions.length === 0 ? (
           <div className="text-center py-16 text-gray-300">
-            <p className="text-sm font-semibold">No public sessions yet â€” create the first one</p>
+            <p className="text-sm font-semibold">No public sessions yet - create the first one</p>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
