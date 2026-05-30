@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createWorker } from "tesseract.js";
 
@@ -68,7 +68,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 }
 
 // -- main page -----------------------------------------------------------------
-export default function MatchPage() {
+function MatchPageInner() {
   const [step, setStep] = useState<Step>("landing");
   const [mode, setMode] = useState<"create" | "join">("create");
   const [inputMethod, setInputMethod] = useState<InputMethod>("manual");
@@ -500,5 +500,13 @@ export default function MatchPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MatchPage() {
+  return (
+    <Suspense>
+      <MatchPageInner />
+    </Suspense>
   );
 }
