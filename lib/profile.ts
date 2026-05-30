@@ -4,7 +4,9 @@ export type Profile = {
   year: string;
   programs: string[];
   bio: string;
-  avatar: string;
+  avatar: string;         // fallback color when no photo
+  avatarImage?: string;   // base64 data URL of uploaded photo
+  coverColor: string;     // profile banner background
   connections: string[];
 };
 
@@ -18,6 +20,7 @@ export function getProfile(): Profile | null {
     if (!raw) return null;
     const p = JSON.parse(raw) as Profile;
     if (!p.avatar) p.avatar = "#002A5C";
+    if (!p.coverColor) p.coverColor = "#002A5C";
     if (!p.connections) p.connections = [];
     return p;
   } catch {
@@ -27,7 +30,6 @@ export function getProfile(): Profile | null {
 
 export function saveProfile(p: Profile): void {
   localStorage.setItem(KEY, JSON.stringify(p));
-  // also publish to the shared store so others can find this profile by username
   registerPublicProfile(p);
 }
 

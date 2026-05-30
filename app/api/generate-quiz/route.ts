@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
   try {
     const genAI = new GoogleGenerativeAI(key);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `You are a study assistant. Generate exactly 5 multiple-choice quiz questions from the study material below.
 

@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getProfile, saveProfile, clearProfile, registerPublicProfile, type Profile } from "@/lib/profile";
 
 const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year", "Graduate", "Alumni"];
+
+const COVER_COLORS = [
+  "#002A5C", "#0f172a", "#1e40af", "#1a8c4e",
+  "#7c3aed", "#be185d", "#dc2626", "#92400e",
+  "#0891b2", "#374151",
+];
 
 const AVATAR_COLORS = [
   "#002A5C", "#1a8c4e", "#7c3aed", "#dc2626",
@@ -66,13 +72,26 @@ function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-function Avatar({ name, color, size = "lg" }: { name: string; color: string; size?: "sm" | "lg" }) {
-  const cls = size === "lg"
-    ? "w-20 h-20 rounded-2xl text-2xl font-black"
-    : "w-10 h-10 rounded-xl text-sm font-black";
+function ProfilePhoto({
+  name, avatar, avatarImage, size = 80, border = false,
+}: {
+  name: string; avatar: string; avatarImage?: string; size?: number; border?: boolean;
+}) {
+  const shared: CSSProperties = {
+    width: size, height: size, borderRadius: "50%",
+    border: border ? "4px solid white" : "none",
+    flexShrink: 0,
+  };
+  if (avatarImage) {
+    return <img src={avatarImage} alt={name} style={{ ...shared, objectFit: "cover" }} />;
+  }
+  const fontSize = size >= 64 ? 22 : size >= 36 ? 13 : 10;
   return (
-    <div className={`${cls} text-white flex items-center justify-center`} style={{ backgroundColor: color }}>
-      {initials(name)}
+    <div
+      style={{ ...shared, backgroundColor: avatar, fontSize }}
+      className="text-white font-black flex items-center justify-center"
+    >
+      {initials(name || "?")}
     </div>
   );
 }
@@ -81,43 +100,69 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
-    displayName: "", year: "", programs: [] as string[], bio: "", avatar: "#002A5C",
+    displayName: "",
+    year: "",
+    programs: [] as string[],
+    bio: "",
+    avatar: "#002A5C",
+    avatarImage: undefined as string | undefined,
+    coverColor: "#002A5C",
   });
   const [saved, setSaved] = useState(false);
   const [openCampus, setOpenCampus] = useState<string | null>("St. George (UTSG)");
-
-  // connections state
   const [connInput, setConnInput] = useState("");
   const [connError, setConnError] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
 
+  const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   useEffect(() => {
     const p = getProfile();
     if (p) {
       setProfile(p);
-      setForm({ displayName: p.displayName, year: p.year, programs: p.programs ?? [], bio: p.bio, avatar: p.avatar ?? "#002A5C" });
-      registerPublicProfile(p); // keep public store up to date
+      setForm({
+        displayName: p.displayName,
+        year: p.year,
+        programs: p.programs ?? [],
+        bio: p.bio,
+        avatar: p.avatar ?? "#002A5C",
+        avatarImage: p.avatarImage,
+        coverColor: p.coverColor ?? "#002A5C",
+      });
+      registerPublicProfile(p);
     } else {
       setEditing(true);
     }
   }, []);
 
-  function copyProfileLink() {
-    if (!profile) return;
-    const url = `${window.location.origin}/profile/${encodeURIComponent(profile.displayName)}`;
-    navigator.clipboard.writeText(url);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
+  function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const src = ev.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext("2d")!;
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2;
+        const sy = (img.height - side) / 2;
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, 200, 200);
+        setForm((f) => ({ ...f, avatarImage: canvas.toDataURL("image/jpeg", 0.85) }));
+      };
+      img.src = src;
+    };
+    reader.readAsDataURL(file);
   }
 
   function toggleProgram(prog: string) {
     setForm((f) => ({
       ...f,
-      programs: f.programs.includes(prog)
-        ? f.programs.filter((p) => p !== prog)
-        : [...f.programs, prog],
+      programs: f.programs.includes(prog) ? f.programs.filter((p) => p !== prog) : [...f.programs, prog],
     }));
   }
 
@@ -131,6 +176,8 @@ export default function ProfilePage() {
       programs: form.programs,
       bio: form.bio.trim(),
       avatar: form.avatar,
+      avatarImage: form.avatarImage,
+      coverColor: form.coverColor,
       connections: profile?.connections ?? [],
     };
     saveProfile(p);
@@ -147,22 +194,15 @@ export default function ProfilePage() {
   function handleDelete() {
     clearProfile();
     setProfile(null);
-    setForm({ displayName: "", year: "", programs: [], bio: "", avatar: "#002A5C" });
+    setForm({ displayName: "", year: "", programs: [], bio: "", avatar: "#002A5C", avatarImage: undefined, coverColor: "#002A5C" });
     setEditing(true);
   }
 
   function addConnection() {
     const name = connInput.trim();
-    if (!name) return;
-    if (!profile) return;
-    if (name.toLowerCase() === profile.displayName.toLowerCase()) {
-      setConnError("That's you.");
-      return;
-    }
-    if (profile.connections.includes(name)) {
-      setConnError("Already connected.");
-      return;
-    }
+    if (!name || !profile) return;
+    if (name.toLowerCase() === profile.displayName.toLowerCase()) { setConnError("That's you."); return; }
+    if (profile.connections.includes(name)) { setConnError("Already connected."); return; }
     const updated: Profile = { ...profile, connections: [...profile.connections, name] };
     saveProfile(updated);
     setProfile(updated);
@@ -177,164 +217,239 @@ export default function ProfilePage() {
     setProfile(updated);
   }
 
-  // -- edit view ---------------------------------------------------------------
+  function copyProfileLink() {
+    if (!profile) return;
+    navigator.clipboard.writeText(`${window.location.origin}/profile/${encodeURIComponent(profile.displayName)}`);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  }
+
+  // ---------------------------------------------------------------------------
+  // EDIT MODE
+  // ---------------------------------------------------------------------------
   if (editing) {
     return (
       <div>
-        <div className="bg-[#002A5C] text-white pt-14 pb-16 px-4 sm:px-6">
-          <div className="max-w-lg mx-auto">
-            <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Profile</p>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight mb-2">
-              {profile ? "Edit Profile" : "Create Your Profile"}
-            </h1>
-            <p className="text-white/50">Your display name appears in chat and study sessions.</p>
-          </div>
+        {/* Cover preview strip */}
+        <div className="pt-14">
+          <div className="h-32 transition-colors duration-200" style={{ backgroundColor: form.coverColor }} />
         </div>
-        <div className="max-w-lg mx-auto px-6 py-10">
 
-          {/* Avatar preview */}
-          <div className="flex justify-center mb-8">
-            <Avatar name={form.displayName || "?"} color={form.avatar} />
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-2xl p-6 space-y-5">
-
-            {/* Avatar color */}
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Avatar Color</label>
-              <div className="flex gap-2 flex-wrap">
-                {AVATAR_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setForm({ ...form, avatar: c })}
-                    className={`w-8 h-8 rounded-xl transition-all ${form.avatar === c ? "ring-2 ring-offset-2 ring-gray-600 scale-110" : "opacity-70 hover:opacity-100"}`}
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Display name */}
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
-                Display Name <span className="text-red-400">*</span>
-              </label>
-              <input
-                value={form.displayName}
-                onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-                placeholder="e.g. Alex or alexcodes"
-                maxLength={30}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+        <div className="max-w-lg mx-auto px-6">
+          {/* Avatar upload row */}
+          <div className="flex items-end gap-4 -mt-10 mb-6">
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+            <div
+              className="relative cursor-pointer group"
+              onClick={() => fileRef.current?.click()}
+            >
+              <ProfilePhoto
+                name={form.displayName || "?"}
+                avatar={form.avatar}
+                avatarImage={form.avatarImage}
+                size={80}
+                border
               />
-              <p className="text-xs text-gray-400 mt-1.5">Visible to other students across all features.</p>
-            </div>
-
-            {/* Year */}
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Year</label>
-              <div className="flex flex-wrap gap-2">
-                {YEARS.map((y) => (
-                  <button
-                    key={y}
-                    onClick={() => setForm({ ...form, year: y })}
-                    className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
-                      form.year === y
-                        ? "bg-[#002A5C] text-white border-[#002A5C]"
-                        : "bg-white text-gray-500 border-gray-200 hover:border-[#002A5C]"
-                    }`}
-                  >
-                    {y}
-                  </button>
-                ))}
+              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
               </div>
             </div>
-
-            {/* Programs */}
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
-                Program <span className="text-gray-300 normal-case font-normal">(select all that apply)</span>
-              </label>
-              {form.programs.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {form.programs.map((p) => (
-                    <span key={p} className="inline-flex items-center gap-1.5 bg-[#002A5C] text-white text-xs font-semibold px-3 py-1.5 rounded-full">
-                      {p}
-                      <button onClick={() => toggleProgram(p)} className="hover:text-white/60 transition-colors">&times;</button>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                {Object.entries(PROGRAMS).map(([campus, programs], i) => (
-                  <div key={campus} className={i > 0 ? "border-t border-gray-200" : ""}>
-                    <button
-                      onClick={() => setOpenCampus(openCampus === campus ? null : campus)}
-                      className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <span>{campus}</span>
-                      <span className="text-gray-400 text-xs">
-                        {form.programs.filter((p) => programs.includes(p)).length > 0 && (
-                          <span className="bg-[#002A5C] text-white rounded-full px-2 py-0.5 mr-2">
-                            {form.programs.filter((p) => programs.includes(p)).length}
-                          </span>
-                        )}
-                        {openCampus === campus ? "▲" : "▼"}
-                      </span>
-                    </button>
-                    {openCampus === campus && (
-                      <div className="px-4 pb-4 flex flex-wrap gap-2">
-                        {programs.map((prog) => (
-                          <button
-                            key={prog}
-                            onClick={() => toggleProgram(prog)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                              form.programs.includes(prog)
-                                ? "bg-[#002A5C] text-white border-[#002A5C]"
-                                : "bg-white text-gray-500 border-gray-200 hover:border-[#002A5C]"
-                            }`}
-                          >
-                            {prog}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Bio */}
-            <div>
-              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
-                Bio <span className="text-gray-300 normal-case font-normal">(optional)</span>
-              </label>
-              <textarea
-                value={form.bio}
-                onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                placeholder="e.g. CS + Stats double major, looking for study partners for MAT237"
-                rows={3}
-                maxLength={150}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
-              />
-              <p className="text-xs text-gray-400 mt-1">{form.bio.length}/150</p>
-            </div>
-
-            <div className="flex gap-3">
+            <div className="pb-1">
               <button
-                onClick={handleSave}
-                disabled={!form.displayName.trim()}
-                className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40"
+                onClick={() => fileRef.current?.click()}
+                className="text-sm font-semibold text-[#002A5C] hover:underline block"
               >
-                {profile ? "Save Changes" : "Create Profile"}
+                {form.avatarImage ? "Change photo" : "Upload photo"}
               </button>
-              {profile && (
+              {form.avatarImage && (
                 <button
-                  onClick={() => setEditing(false)}
-                  className="px-5 border border-gray-200 text-gray-500 font-semibold py-3 rounded-xl text-sm hover:border-gray-400 transition-colors"
+                  onClick={() => setForm((f) => ({ ...f, avatarImage: undefined }))}
+                  className="text-xs text-red-400 hover:underline mt-0.5 block"
                 >
-                  Cancel
+                  Remove
                 </button>
               )}
+              <p className="text-xs text-gray-400 mt-0.5">Cropped to square, JPEG</p>
+            </div>
+          </div>
+
+          <div className="space-y-4 pb-16">
+            {/* Color pickers */}
+            <div className="bg-white border border-gray-100 rounded-2xl p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                  Cover Color
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {COVER_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => setForm((f) => ({ ...f, coverColor: c }))}
+                      style={{
+                        backgroundColor: c,
+                        outline: form.coverColor === c ? "3px solid #111" : "none",
+                        outlineOffset: "2px",
+                        opacity: form.coverColor === c ? 1 : 0.65,
+                      }}
+                      className="w-8 h-8 rounded-xl hover:opacity-100 transition-all"
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {!form.avatarImage && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                    Avatar Color
+                  </label>
+                  <div className="flex gap-2 flex-wrap">
+                    {AVATAR_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setForm((f) => ({ ...f, avatar: c }))}
+                        style={{
+                          backgroundColor: c,
+                          outline: form.avatar === c ? "3px solid #111" : "none",
+                          outlineOffset: "2px",
+                          opacity: form.avatar === c ? 1 : 0.65,
+                        }}
+                        className="w-8 h-8 rounded-xl hover:opacity-100 transition-all"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Main form fields */}
+            <div className="bg-white border border-gray-100 rounded-2xl p-5 space-y-5">
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+                  Display Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  value={form.displayName}
+                  onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
+                  placeholder="e.g. Alex Chen"
+                  maxLength={30}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                />
+                <p className="text-xs text-gray-400 mt-1.5">Visible across all chats and study sessions.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Year</label>
+                <div className="flex flex-wrap gap-2">
+                  {YEARS.map((y) => (
+                    <button
+                      key={y}
+                      onClick={() => setForm((f) => ({ ...f, year: y }))}
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all ${
+                        form.year === y
+                          ? "bg-[#002A5C] text-white border-[#002A5C]"
+                          : "bg-white text-gray-500 border-gray-200 hover:border-[#002A5C]"
+                      }`}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+                  Program{" "}
+                  <span className="text-gray-300 normal-case font-normal">(select all that apply)</span>
+                </label>
+                {form.programs.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {form.programs.map((p) => (
+                      <span
+                        key={p}
+                        className="inline-flex items-center gap-1.5 bg-[#002A5C] text-white text-xs font-semibold px-3 py-1.5 rounded-full"
+                      >
+                        {p}
+                        <button onClick={() => toggleProgram(p)} className="hover:text-white/60">&times;</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  {Object.entries(PROGRAMS).map(([campus, progs], i) => (
+                    <div key={campus} className={i > 0 ? "border-t border-gray-200" : ""}>
+                      <button
+                        onClick={() => setOpenCampus(openCampus === campus ? null : campus)}
+                        className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <span>{campus}</span>
+                        <span className="flex items-center gap-2 text-gray-400 text-xs">
+                          {form.programs.filter((p) => progs.includes(p)).length > 0 && (
+                            <span className="bg-[#002A5C] text-white rounded-full px-2 py-0.5 text-xs">
+                              {form.programs.filter((p) => progs.includes(p)).length}
+                            </span>
+                          )}
+                          {openCampus === campus ? "^" : "v"}
+                        </span>
+                      </button>
+                      {openCampus === campus && (
+                        <div className="px-4 pb-4 flex flex-wrap gap-2">
+                          {progs.map((prog) => (
+                            <button
+                              key={prog}
+                              onClick={() => toggleProgram(prog)}
+                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                                form.programs.includes(prog)
+                                  ? "bg-[#002A5C] text-white border-[#002A5C]"
+                                  : "bg-white text-gray-500 border-gray-200 hover:border-[#002A5C]"
+                              }`}
+                            >
+                              {prog}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+                  Bio{" "}
+                  <span className="text-gray-300 normal-case font-normal">(optional)</span>
+                </label>
+                <textarea
+                  value={form.bio}
+                  onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                  placeholder="e.g. CS + Stats double major, looking for study partners for MAT237"
+                  rows={3}
+                  maxLength={200}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                />
+                <p className="text-xs text-gray-400 mt-1">{form.bio.length}/200</p>
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={handleSave}
+                  disabled={!form.displayName.trim()}
+                  className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40"
+                >
+                  {profile ? "Save Changes" : "Create Profile"}
+                </button>
+                {profile && (
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="px-5 border border-gray-200 text-gray-500 font-semibold py-3 rounded-xl text-sm hover:border-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -344,122 +459,151 @@ export default function ProfilePage() {
 
   if (!profile) return null;
 
-  // -- view mode ---------------------------------------------------------------
+  const programs = profile.programs ?? [];
+
+  // ---------------------------------------------------------------------------
+  // VIEW MODE
+  // ---------------------------------------------------------------------------
   return (
     <div>
-      <div className="bg-[#002A5C] text-white pt-14 pb-16 px-4 sm:px-6">
-        <div className="max-w-lg mx-auto">
-          <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Profile</p>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight">{profile.displayName}</h1>
-          {(profile.year || (profile.programs && profile.programs.length > 0)) && (
-            <p className="text-white/50 mt-2">
-              {[profile.year, ...(profile.programs ?? [])].filter(Boolean).join(" · ")}
-            </p>
-          )}
-        </div>
-      </div>
+      {/* Cover banner — extends behind navbar for full-bleed effect */}
+      <div
+        className="h-48"
+        style={{ backgroundColor: profile.coverColor ?? "#002A5C" }}
+      />
 
-      <div className="max-w-lg mx-auto px-6 py-10 space-y-4">
-
-        {/* Profile card */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center">
-          <div className="flex justify-center mb-4">
-            <Avatar name={profile.displayName} color={profile.avatar ?? "#002A5C"} />
-          </div>
-          {profile.bio && (
-            <p className="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed mb-2">{profile.bio}</p>
-          )}
-          {saved && <p className="text-green-600 text-xs font-semibold mt-2">Profile saved</p>}
+      <div className="max-w-lg mx-auto px-6 pb-16">
+        {/* Avatar overlapping cover */}
+        <div className="-mt-10 mb-3">
+          <ProfilePhoto
+            name={profile.displayName}
+            avatar={profile.avatar ?? "#002A5C"}
+            avatarImage={profile.avatarImage}
+            size={84}
+            border
+          />
         </div>
 
-        {/* Connections */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-6">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-            Connections <span className="font-normal normal-case text-gray-300 ml-1">({profile.connections.length})</span>
-          </p>
+        {/* Name + year */}
+        <h1 className="text-2xl font-black text-black leading-tight">{profile.displayName}</h1>
+        {profile.year && (
+          <p className="text-sm text-gray-500 mt-0.5">{profile.year}</p>
+        )}
 
-          {/* Add connection */}
-          <div className="flex gap-2 mb-4">
-            <input
-              value={connInput}
-              onChange={(e) => { setConnInput(e.target.value); setConnError(""); }}
-              onKeyDown={(e) => e.key === "Enter" && addConnection()}
-              placeholder="Enter a display name to connect"
-              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
-            />
-            <button
-              onClick={addConnection}
-              className="bg-[#002A5C] text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-black transition-colors shrink-0"
-            >
-              Add
-            </button>
-          </div>
-          {connError && <p className="text-red-500 text-xs mb-3 font-medium">{connError}</p>}
+        {saved && <p className="text-green-600 text-xs font-semibold mt-2">Profile saved.</p>}
 
-          {profile.connections.length === 0 ? (
-            <p className="text-xs text-gray-300 text-center py-4">No connections yet. Add friends by their display name.</p>
-          ) : (
-            <div className="space-y-2">
-              {profile.connections.map((name) => (
-                <div key={name} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-gray-50 rounded-xl">
-                  <Link
-                    href={`/profile/${encodeURIComponent(name)}`}
-                    className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0">
-                      {name[0].toUpperCase()}
-                    </div>
-                    <span className="text-sm font-semibold text-black truncate">{name}</span>
-                  </Link>
-                  <button
-                    onClick={() => removeConnection(name)}
-                    className="text-xs text-gray-300 hover:text-red-400 transition-colors font-semibold shrink-0"
-                  >
-                    Remove
-                  </button>
+        <div className="mt-5 space-y-4">
+
+          {/* About card */}
+          {(profile.bio || programs.length > 0) && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">About</p>
+              {profile.bio && (
+                <p className="text-sm text-gray-600 leading-relaxed">{profile.bio}</p>
+              )}
+              {profile.bio && programs.length > 0 && (
+                <div className="border-t border-gray-100 my-4" />
+              )}
+              {programs.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {programs.map((prog) => (
+                    <span
+                      key={prog}
+                      className="bg-[#002A5C]/8 text-[#002A5C] text-xs font-semibold px-3 py-1.5 rounded-full"
+                    >
+                      {prog}
+                    </span>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           )}
-        </div>
 
-        {/* Share profile */}
-        <div className="bg-[#002A5C]/5 border border-[#002A5C]/10 rounded-2xl p-4 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold text-[#002A5C] mb-0.5">Your public profile</p>
-            <p className="text-xs text-gray-400 font-mono truncate">
-              varsio.vercel.app/profile/{profile.displayName}
+          {/* Connections */}
+          <div className="bg-white border border-gray-100 rounded-2xl p-5">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+              Connections ({profile.connections.length})
             </p>
+
+            <div className="flex gap-2 mb-3">
+              <input
+                value={connInput}
+                onChange={(e) => { setConnInput(e.target.value); setConnError(""); }}
+                onKeyDown={(e) => e.key === "Enter" && addConnection()}
+                placeholder="Add by display name..."
+                className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+              />
+              <button
+                onClick={addConnection}
+                className="bg-[#002A5C] text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-black transition-colors shrink-0"
+              >
+                Add
+              </button>
+            </div>
+            {connError && <p className="text-red-500 text-xs mb-3 font-medium">{connError}</p>}
+
+            {profile.connections.length === 0 ? (
+              <p className="text-xs text-gray-300 text-center py-3">
+                No connections yet. Visit someone&apos;s profile to connect, or add by name above.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {profile.connections.map((name) => (
+                  <div key={name} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-gray-50 rounded-xl">
+                    <Link
+                      href={`/profile/${encodeURIComponent(name)}`}
+                      className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0">
+                        {name[0].toUpperCase()}
+                      </div>
+                      <span className="text-sm font-semibold text-black truncate">{name}</span>
+                    </Link>
+                    <button
+                      onClick={() => removeConnection(name)}
+                      className="text-xs text-gray-300 hover:text-red-400 transition-colors font-semibold shrink-0"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <button
-            onClick={copyProfileLink}
-            className={`text-xs font-bold px-4 py-2 rounded-xl shrink-0 transition-all ${linkCopied ? "bg-[#1a8c4e] text-white" : "bg-[#002A5C] text-white hover:bg-black"}`}
-          >
-            {linkCopied ? "Copied!" : "Share"}
-          </button>
-        </div>
 
-        {/* Community guidelines */}
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <p className="text-xs font-bold text-amber-800 mb-1">Community Guidelines</p>
-          <p className="text-amber-700 text-xs leading-relaxed">
-            Your display name is visible across all chats and study sessions. Keep it respectful.
-          </p>
-        </div>
+          {/* Share profile */}
+          <div className="bg-[#002A5C]/5 border border-[#002A5C]/10 rounded-2xl p-4 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-[#002A5C] mb-0.5">Your public profile</p>
+              <p className="text-xs text-gray-400 font-mono truncate">
+                varsio.vercel.app/profile/{profile.displayName}
+              </p>
+            </div>
+            <button
+              onClick={copyProfileLink}
+              className={`text-xs font-bold px-4 py-2 rounded-xl shrink-0 transition-all ${
+                linkCopied ? "bg-[#1a8c4e] text-white" : "bg-[#002A5C] text-white hover:bg-black"
+              }`}
+            >
+              {linkCopied ? "Copied!" : "Share"}
+            </button>
+          </div>
 
-        <div className="flex gap-3">
-          <button
-            onClick={() => setEditing(true)}
-            className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors"
-          >
-            Edit Profile
-          </button>
-          <button
-            onClick={handleDelete}
-            className="px-5 border border-red-200 text-red-400 font-semibold py-3 rounded-xl text-sm hover:bg-red-50 transition-colors"
-          >
-            Delete
-          </button>
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => setEditing(true)}
+              className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors"
+            >
+              Edit Profile
+            </button>
+            <button
+              onClick={handleDelete}
+              className="px-5 border border-red-200 text-red-400 font-semibold py-3 rounded-xl text-sm hover:bg-red-50 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import { ProButton } from "@/components/ProButton";
 
 // -- App Mockup Components --
 
@@ -132,7 +133,7 @@ const miniFeatures = [
       </svg>
     ),
     title: "Student Tools",
-    desc: "Track deadlines, calculate your grade, and scan your syllabus. Built around how UofT actually works.",
+    desc: "Track deadlines, calculate your grade, and scan your syllabus. Built around how UofT works.",
     href: "/tools",
   },
   {
@@ -174,7 +175,7 @@ export default function Home() {
             <span className="text-[#F0B429]">UofT actually needed.</span>
           </h1>
           <p className="text-white/45 text-lg sm:text-xl max-w-xl mx-auto mb-10 leading-relaxed">
-            Match courses with your friends, see who's in every lecture, and study together with AI. All in one spot.
+            Find your coursemates, study smarter with AI, and stay connected with your class &mdash; everything you need, all in one place.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
@@ -217,7 +218,7 @@ export default function Home() {
               See exactly who&apos;s<br />in your courses.
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed mb-8">
-              Drop in a code and instantly see every course and section you share with your friends. Works across UTSG, UTM, and UTSC.
+              Share a room code and instantly discover every course and section you have in common with your friends. Works across UTSG, UTM, and UTSC.
             </p>
             <Link
               href="/match"
@@ -241,7 +242,7 @@ export default function Home() {
               Your study group,<br />supercharged.
             </h2>
             <p className="text-gray-500 text-lg leading-relaxed mb-8">
-              Throw in your notes, call in your friends, and get AI to quiz you on the stuff that actually matters. Keep it private or open it up.
+              Upload your notes, invite your friends, and let AI generate quizzes on exactly what you need to know. Keep sessions private or open them to the class.
             </p>
             <Link
               href="/study"
@@ -272,9 +273,9 @@ export default function Home() {
       <section className="py-24 sm:py-32 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 mb-4">The rest of the app.</h2>
+            <h2 className="text-4xl sm:text-5xl font-black text-gray-900 mb-4">Built for every part of student life.</h2>
             <p className="text-gray-400 text-lg max-w-md mx-auto">
-              Four more tools built for how UofT students actually get through the year.
+              Purpose-built tools designed around the way UofT students study, connect, and get through the year.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -366,9 +367,7 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <button className="w-full bg-[#F0B429] text-[#002A5C] font-bold py-3.5 rounded-xl text-sm hover:bg-yellow-400 transition-colors">
-                Upgrade to Pro &rarr;
-              </button>
+              <ProButton />
             </div>
 
           </div>
@@ -385,7 +384,7 @@ export default function Home() {
               Your people are<br />already on here.
             </h2>
             <p className="text-white/40 text-lg mb-10 max-w-sm mx-auto leading-relaxed">
-              Takes a minute to set up. Just pick your courses and share your code.
+              Set up in under a minute. Select your courses, share your code, and find your classmates.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link

@@ -11,28 +11,20 @@ type Member = { name: string; courses: CourseEntry[] };
 type Room = { code: string; members: Member[] };
 type CourseEntry = { code: string; section: string };
 
-// -- shared room store (in-memory for demo) -----------------------------------
-const ROOMS: Record<string, Room> = {};
-
+// -- room persistence (always read/write localStorage directly) ---------------
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-function persistRooms() {
-  try { localStorage.setItem("varsio_rooms", JSON.stringify(ROOMS)); } catch {}
-}
-
-function hydrateRooms() {
+function loadRooms(): Record<string, Room> {
   try {
     const raw = localStorage.getItem("varsio_rooms");
-    if (raw) Object.assign(ROOMS, JSON.parse(raw));
-  } catch {}
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
 }
 
-function findRoom(code: string): Room | undefined {
-  if (ROOMS[code]) return ROOMS[code];
-  hydrateRooms();
-  return ROOMS[code];
+function saveRooms(rooms: Record<string, Room>): void {
+  try { localStorage.setItem("varsio_rooms", JSON.stringify(rooms)); } catch {}
 }
 
 // Extract UofT-style course codes from OCR text
@@ -170,17 +162,19 @@ function MatchPageInner() {
     if (courses.length === 0) { setError("Add at least one course."); return; }
     if (mode === "join") {
       const code = joinCode.trim().toUpperCase();
-      const found = findRoom(code);
-      if (!found) { setError("Room not found. Check the code."); return; }
-      found.members.push({ name: name.trim(), courses });
-      persistRooms();
-      setRoom({ ...found });
+      const rooms = loadRooms();
+      const found = rooms[code];
+      if (!found) { setError("Room not found. Check the code and try again."); return; }
+      rooms[code] = { ...found, members: [...found.members, { name: name.trim(), courses }] };
+      saveRooms(rooms);
+      setRoom({ ...rooms[code] });
       setRoomCode(code);
     } else {
       const code = generateCode();
+      const rooms = loadRooms();
       const newRoom: Room = { code, members: [{ name: name.trim(), courses }] };
-      ROOMS[code] = newRoom;
-      persistRooms();
+      rooms[code] = newRoom;
+      saveRooms(rooms);
       setRoom(newRoom);
       setRoomCode(code);
     }

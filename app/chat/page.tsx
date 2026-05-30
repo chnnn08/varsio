@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getProfile, type Profile } from "@/lib/profile";
 import Link from "next/link";
@@ -19,6 +19,7 @@ type Post = {
   showReplies: boolean;
 };
 type Thread = { course: string; posts: Post[] };
+type MentionState = { active: "post" | number; query: string } | null;
 
 const INITIAL_THREADS: Thread[] = [
   {
@@ -66,6 +67,62 @@ const INITIAL_THREADS: Thread[] = [
   },
 ];
 
+// Renders post/reply text with @mentions as clickable profile links
+function TextWithMentions({ text, myName }: { text: string; myName?: string }) {
+  const parts = text.split(/(@\w+)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (/^@\w+$/.test(part)) {
+          const name = part.slice(1);
+          const isMe = myName && name.toLowerCase() === myName.toLowerCase();
+          return (
+            <Link
+              key={i}
+              href={`/profile/${encodeURIComponent(name)}`}
+              className={`font-bold rounded ${
+                isMe
+                  ? "text-[#F0B429] bg-[#F0B429]/15 px-0.5"
+                  : "text-[#002A5C] hover:underline"
+              }`}
+            >
+              {part}
+            </Link>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
+
+// @ mention suggestion dropdown
+function MentionDropdown({
+  suggestions,
+  onSelect,
+}: {
+  suggestions: string[];
+  onSelect: (name: string) => void;
+}) {
+  if (suggestions.length === 0) return null;
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-40 z-30">
+      {suggestions.map((name) => (
+        <button
+          key={name}
+          onMouseDown={(e) => { e.preventDefault(); onSelect(name); }}
+          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 font-semibold text-[#002A5C] flex items-center gap-2"
+        >
+          <span className="w-5 h-5 rounded-full bg-[#002A5C] text-white text-[10px] font-black flex items-center justify-center shrink-0">
+            {name[0].toUpperCase()}
+          </span>
+          @{name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ChatInner() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [threads, setThreads] = useState<Thread[]>(INITIAL_THREADS);
@@ -76,6 +133,9 @@ function ChatInner() {
   const [replyInputs, setReplyInputs] = useState<Record<number, string>>({});
   const [sort, setSort] = useState<"top" | "new">("top");
   const [linkCopied, setLinkCopied] = useState(false);
+  const [mention, setMention] = useState<MentionState>(null);
+
+  const postRef = useRef<HTMLTextAreaElement>(null);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -103,7 +163,6 @@ function ChatInner() {
 
   const activeThread = threads.find((t) => t.course === activeCourse);
   const filtered = threads.filter((t) => t.course.includes(search.toUpperCase()));
-
   const visiblePosts = (activeThread?.posts ?? [])
     .filter((p) => !p.reported)
     .sort((a, b) =>
@@ -111,6 +170,42 @@ function ChatInner() {
         ? (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes)
         : b.id - a.id
     );
+
+  // collect all names in the thread for mention suggestions
+  function getSuggestions(query: string): string[] {
+    const friends = profile?.connections ?? [];
+    const threadNames = [
+      ...new Set([
+        ...visiblePosts.map((p) => p.author),
+        ...visiblePosts.flatMap((p) => p.replies.map((r) => r.author)),
+      ]),
+    ].filter((a) => a !== profile?.displayName);
+    const pool = [...new Set([...friends, ...threadNames])];
+    const q = query.toLowerCase();
+    return pool.filter((n) => !q || n.toLowerCase().includes(q)).slice(0, 6);
+  }
+
+  function detectMention(text: string, active: "post" | number) {
+    const match = text.match(/@(\w*)$/);
+    if (match) setMention({ active, query: match[1] });
+    else if (mention) setMention(null);
+  }
+
+  function insertMention(name: string) {
+    if (!mention) return;
+    if (mention.active === "post") {
+      const ta = postRef.current;
+      const cursor = ta?.selectionStart ?? postText.length;
+      const before = postText.slice(0, cursor).replace(/@\w*$/, `@${name} `);
+      const after = postText.slice(cursor);
+      setPostText(before + after);
+    } else {
+      const id = mention.active as number;
+      const cur = replyInputs[id] ?? "";
+      setReplyInputs((prev) => ({ ...prev, [id]: cur.replace(/@\w*$/, `@${name} `) }));
+    }
+    setMention(null);
+  }
 
   function updatePost(id: number, updater: (p: Post) => Post) {
     setThreads((prev) =>
@@ -144,6 +239,7 @@ function ChatInner() {
       prev.map((t) => t.course === activeCourse ? { ...t, posts: [post, ...t.posts] } : t)
     );
     setPostText("");
+    setMention(null);
   }
 
   function addReply(postId: number) {
@@ -151,6 +247,17 @@ function ChatInner() {
     const reply: Reply = { id: Date.now(), author: profile.displayName, text: replyInputs[postId].trim(), time: "just now" };
     updatePost(postId, (p) => ({ ...p, replies: [...p.replies, reply], showReplies: true }));
     setReplyInputs((prev) => ({ ...prev, [postId]: "" }));
+    setMention(null);
+  }
+
+  // pre-fill reply box with @author and open replies
+  function replyTo(postId: number, author: string) {
+    updatePost(postId, (p) => ({ ...p, showReplies: true }));
+    setReplyInputs((prev) => {
+      const existing = prev[postId] ?? "";
+      if (existing.includes(`@${author}`)) return prev;
+      return { ...prev, [postId]: `@${author} ` };
+    });
   }
 
   function toggleReplies(postId: number) {
@@ -180,260 +287,324 @@ function ChatInner() {
         </div>
       </div>
 
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10">
-      {/* Mobile course scroller */}
-      <div className="md:hidden mb-4">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {threads.map((t) => (
-            <button
-              key={t.course}
-              onClick={() => setActiveCourse(t.course)}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold font-mono transition-all ${
-                activeCourse === t.course ? "bg-[#002A5C] text-white" : "bg-white border border-gray-200 text-gray-600"
-              }`}
-            >
-              {t.course}
-            </button>
-          ))}
-          <div className="flex gap-1.5 shrink-0">
-            <input
-              value={newCourse}
-              onChange={(e) => setNewCourse(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addThread()}
-              placeholder="+ Add"
-              className="w-20 border border-gray-200 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
-            />
-            <button onClick={addThread} className="bg-[#002A5C] text-white px-2 rounded-xl text-xs font-bold">+</button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-6">
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:block w-56 shrink-0">
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Courses</p>
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search..."
-          className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
-        />
-        <div className="space-y-0.5 mb-4">
-          {filtered.map((t) => (
-            <button
-              key={t.course}
-              onClick={() => setActiveCourse(t.course)}
-              className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center justify-between ${
-                activeCourse === t.course ? "bg-[#002A5C] text-white font-semibold" : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <span className="font-mono">{t.course}</span>
-              <span className={`text-xs ${activeCourse === t.course ? "text-white/50" : "text-gray-300"}`}>
-                {t.posts.filter((p) => !p.reported).length}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-1.5">
-          <input
-            value={newCourse}
-            onChange={(e) => setNewCourse(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addThread()}
-            placeholder="Add course..."
-            className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
-          />
-          <button onClick={addThread} className="bg-[#002A5C] text-white w-8 rounded-xl text-sm font-bold hover:bg-black transition-colors shrink-0">+</button>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <div className="flex-1 min-w-0">
-        {/* Header */}
-        <div className="bg-white border border-gray-100 rounded-2xl px-6 py-4 mb-3 flex items-center justify-between">
-          <div>
-            <h1 className="font-black text-[#002A5C] text-lg font-mono">{activeCourse}</h1>
-            <p className="text-xs text-gray-400 mt-0.5">{visiblePosts.length} post{visiblePosts.length !== 1 ? "s" : ""} · cleared end of semester</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={copyLink}
-              className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${linkCopied ? "bg-green-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
-            >
-              {linkCopied ? "Copied!" : "Share"}
-            </button>
-          {/* Sort toggle */}
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
-            {(["top", "new"] as const).map((s) => (
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 md:py-10">
+        {/* Mobile course scroller */}
+        <div className="md:hidden mb-4">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            {threads.map((t) => (
               <button
-                key={s}
-                onClick={() => setSort(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
-                  sort === s ? "bg-white text-[#002A5C] shadow-sm" : "text-gray-400 hover:text-gray-600"
+                key={t.course}
+                onClick={() => setActiveCourse(t.course)}
+                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold font-mono transition-all ${
+                  activeCourse === t.course ? "bg-[#002A5C] text-white" : "bg-white border border-gray-200 text-gray-600"
                 }`}
               >
-                {s === "top" ? "Top" : "New"}
+                {t.course}
               </button>
             ))}
-          </div>
+            <div className="flex gap-1.5 shrink-0">
+              <input
+                value={newCourse}
+                onChange={(e) => setNewCourse(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addThread()}
+                placeholder="+ Add"
+                className="w-20 border border-gray-200 rounded-xl px-2 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+              />
+              <button onClick={addThread} className="bg-[#002A5C] text-white px-2 rounded-xl text-xs font-bold">+</button>
+            </div>
           </div>
         </div>
 
-        {/* Posts */}
-        <div className="space-y-3 mb-3">
-          {visiblePosts.length === 0 ? (
-            <div className="bg-white border border-gray-100 rounded-2xl text-center py-16 text-gray-300">
-              <p className="text-sm font-semibold">No posts yet - start the conversation</p>
+        <div className="flex gap-6">
+          {/* Desktop Sidebar */}
+          <aside className="hidden md:block w-56 shrink-0">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Courses</p>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+            />
+            <div className="space-y-0.5 mb-4">
+              {filtered.map((t) => (
+                <button
+                  key={t.course}
+                  onClick={() => setActiveCourse(t.course)}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center justify-between ${
+                    activeCourse === t.course ? "bg-[#002A5C] text-white font-semibold" : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  <span className="font-mono">{t.course}</span>
+                  <span className={`text-xs ${activeCourse === t.course ? "text-white/50" : "text-gray-300"}`}>
+                    {t.posts.filter((p) => !p.reported).length}
+                  </span>
+                </button>
+              ))}
             </div>
-          ) : (
-            visiblePosts.map((p) => {
-              const score = p.upvotes - p.downvotes;
-              return (
-                <div key={p.id} className="bg-white border border-gray-100 rounded-2xl p-5">
-                  {/* Post header */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Link href={`/profile/${encodeURIComponent(p.author)}`} className="w-8 h-8 rounded-xl bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity">
-                        {p.author[0].toUpperCase()}
-                      </Link>
-                      <div>
-                        <Link href={`/profile/${encodeURIComponent(p.author)}`} className="text-sm font-bold text-[#002A5C] hover:underline">{p.author}</Link>
-                        <span className="text-xs text-gray-300 ml-2">{p.time}</span>
-                      </div>
-                    </div>
-                    {profile && p.author !== profile.displayName && (
-                      <button onClick={() => report(p.id)} className="text-xs text-gray-300 hover:text-red-400 transition-colors">
-                        Report
-                      </button>
-                    )}
-                  </div>
+            <div className="flex gap-1.5">
+              <input
+                value={newCourse}
+                onChange={(e) => setNewCourse(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addThread()}
+                placeholder="Add course..."
+                className="flex-1 min-w-0 border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+              />
+              <button onClick={addThread} className="bg-[#002A5C] text-white w-8 rounded-xl text-sm font-bold hover:bg-black transition-colors shrink-0">+</button>
+            </div>
+          </aside>
 
-                  {/* Post body */}
-                  <p className="text-sm text-gray-700 leading-relaxed mb-4">{p.text}</p>
-
-                  {/* Actions row */}
-                  <div className="flex items-center gap-3">
-                    {/* Vote */}
-                    <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
-                      <button
-                        onClick={() => vote(p.id, "up")}
-                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          p.voted === "up" ? "bg-[#1a8c4e] text-white" : "text-gray-500 hover:bg-white hover:text-[#1a8c4e]"
-                        }`}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                        </svg>
-                        {p.upvotes}
-                      </button>
-                      <span className={`text-xs font-black px-1 min-w-[1.5rem] text-center ${score > 0 ? "text-[#1a8c4e]" : score < 0 ? "text-red-500" : "text-gray-400"}`}>
-                        {score > 0 ? `+${score}` : score}
-                      </span>
-                      <button
-                        onClick={() => vote(p.id, "down")}
-                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          p.voted === "down" ? "bg-red-500 text-white" : "text-gray-500 hover:bg-white hover:text-red-500"
-                        }`}
-                      >
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        {p.downvotes}
-                      </button>
-                    </div>
-
-                    {/* Reply toggle */}
+          {/* Main feed */}
+          <div className="flex-1 min-w-0">
+            {/* Course header */}
+            <div className="bg-white border border-gray-100 rounded-2xl px-6 py-4 mb-3 flex items-center justify-between">
+              <div>
+                <h1 className="font-black text-[#002A5C] text-lg font-mono">{activeCourse}</h1>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {visiblePosts.length} post{visiblePosts.length !== 1 ? "s" : ""} &middot; cleared end of semester
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={copyLink}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all ${linkCopied ? "bg-green-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                >
+                  {linkCopied ? "Copied!" : "Share"}
+                </button>
+                <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
+                  {(["top", "new"] as const).map((s) => (
                     <button
-                      onClick={() => toggleReplies(p.id)}
-                      className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-[#002A5C] transition-colors px-3 py-2 rounded-xl hover:bg-gray-100"
+                      key={s}
+                      onClick={() => setSort(s)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
+                        sort === s ? "bg-white text-[#002A5C] shadow-sm" : "text-gray-400 hover:text-gray-600"
+                      }`}
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      {p.replies.length > 0 ? `${p.replies.length} ${p.replies.length === 1 ? "reply" : "replies"}` : "Reply"}
+                      {s === "top" ? "Top" : "New"}
                     </button>
-                  </div>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-                  {/* Replies section */}
-                  {p.showReplies && (
-                    <div className="mt-4 ml-4 border-l-2 border-gray-100 pl-4 space-y-3">
-                      {p.replies.map((r) => (
-                        <div key={r.id}>
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-6 h-6 rounded-lg bg-[#F0B429] text-[#002A5C] text-xs font-black flex items-center justify-center shrink-0">
-                              {r.author[0].toUpperCase()}
-                            </div>
-                            <span className="text-xs font-bold text-[#002A5C]">{r.author}</span>
-                            <span className="text-xs text-gray-300">{r.time}</span>
-                          </div>
-                          <p className="text-sm text-gray-600 leading-relaxed ml-8">{r.text}</p>
-                        </div>
-                      ))}
-
-                      {/* Reply input */}
-                      {profile ? (
-                        <div className="flex gap-2 mt-2">
-                          <input
-                            value={replyInputs[p.id] ?? ""}
-                            onChange={(e) => setReplyInputs((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                            onKeyDown={(e) => e.key === "Enter" && addReply(p.id)}
-                            placeholder="Write a reply..."
-                            className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
-                          />
-                          <button
-                            onClick={() => addReply(p.id)}
-                            className="bg-[#002A5C] text-white px-4 rounded-xl text-xs font-bold hover:bg-black transition-colors"
+            {/* Posts */}
+            <div className="space-y-3 mb-3">
+              {visiblePosts.length === 0 ? (
+                <div className="bg-white border border-gray-100 rounded-2xl text-center py-16 text-gray-300">
+                  <p className="text-sm font-semibold">No posts yet - start the conversation</p>
+                </div>
+              ) : (
+                visiblePosts.map((p) => {
+                  const score = p.upvotes - p.downvotes;
+                  return (
+                    <div key={p.id} className="bg-white border border-gray-100 rounded-2xl p-5">
+                      {/* Post header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/profile/${encodeURIComponent(p.author)}`}
+                            className="w-8 h-8 rounded-xl bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0 hover:opacity-80 transition-opacity"
                           >
-                            Reply
+                            {p.author[0].toUpperCase()}
+                          </Link>
+                          <div>
+                            <Link href={`/profile/${encodeURIComponent(p.author)}`} className="text-sm font-bold text-[#002A5C] hover:underline">
+                              {p.author}
+                            </Link>
+                            <span className="text-xs text-gray-300 ml-2">{p.time}</span>
+                          </div>
+                        </div>
+                        {profile && p.author !== profile.displayName && (
+                          <button onClick={() => report(p.id)} className="text-xs text-gray-300 hover:text-red-400 transition-colors">
+                            Report
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Post body */}
+                      <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                        <TextWithMentions text={p.text} myName={profile?.displayName} />
+                      </p>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-3">
+                        {/* Vote */}
+                        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+                          <button
+                            onClick={() => vote(p.id, "up")}
+                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                              p.voted === "up" ? "bg-[#1a8c4e] text-white" : "text-gray-500 hover:bg-white hover:text-[#1a8c4e]"
+                            }`}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                            </svg>
+                            {p.upvotes}
+                          </button>
+                          <span className={`text-xs font-black px-1 min-w-[1.5rem] text-center ${score > 0 ? "text-[#1a8c4e]" : score < 0 ? "text-red-500" : "text-gray-400"}`}>
+                            {score > 0 ? `+${score}` : score}
+                          </span>
+                          <button
+                            onClick={() => vote(p.id, "down")}
+                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                              p.voted === "down" ? "bg-red-500 text-white" : "text-gray-500 hover:bg-white hover:text-red-500"
+                            }`}
+                          >
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                            {p.downvotes}
                           </button>
                         </div>
-                      ) : (
-                        <p className="text-xs text-gray-400 mt-2">
-                          <Link href="/profile" className="text-[#002A5C] font-semibold hover:underline">Create a profile</Link> to reply.
-                        </p>
+
+                        {/* Reply toggle */}
+                        <button
+                          onClick={() => toggleReplies(p.id)}
+                          className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-[#002A5C] transition-colors px-3 py-2 rounded-xl hover:bg-gray-100"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          {p.replies.length > 0 ? `${p.replies.length} ${p.replies.length === 1 ? "reply" : "replies"}` : "Replies"}
+                        </button>
+
+                        {/* Quick @ Reply to author */}
+                        {profile && p.author !== profile.displayName && (
+                          <button
+                            onClick={() => replyTo(p.id, p.author)}
+                            className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 hover:text-[#002A5C] transition-colors px-3 py-2 rounded-xl hover:bg-gray-100"
+                          >
+                            @ Reply
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Replies section */}
+                      {p.showReplies && (
+                        <div className="mt-4 ml-4 border-l-2 border-gray-100 pl-4 space-y-3">
+                          {p.replies.map((r) => (
+                            <div key={r.id}>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Link
+                                  href={`/profile/${encodeURIComponent(r.author)}`}
+                                  className="w-6 h-6 rounded-lg bg-[#F0B429] text-[#002A5C] text-xs font-black flex items-center justify-center shrink-0 hover:opacity-80"
+                                >
+                                  {r.author[0].toUpperCase()}
+                                </Link>
+                                <Link href={`/profile/${encodeURIComponent(r.author)}`} className="text-xs font-bold text-[#002A5C] hover:underline">
+                                  {r.author}
+                                </Link>
+                                <span className="text-xs text-gray-300">{r.time}</span>
+                              </div>
+                              <p className="text-sm text-gray-600 leading-relaxed ml-8">
+                                <TextWithMentions text={r.text} myName={profile?.displayName} />
+                              </p>
+                            </div>
+                          ))}
+
+                          {/* Reply input */}
+                          {profile ? (
+                            <div className="relative mt-2">
+                              <div className="flex gap-2">
+                                <input
+                                  value={replyInputs[p.id] ?? ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setReplyInputs((prev) => ({ ...prev, [p.id]: val }));
+                                    detectMention(val, p.id);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Escape") { setMention(null); return; }
+                                    if (e.key === "Enter") addReply(p.id);
+                                  }}
+                                  onBlur={() => setTimeout(() => setMention(null), 150)}
+                                  placeholder={`Reply as ${profile.displayName}... (use @ to mention)`}
+                                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                                />
+                                <button
+                                  onClick={() => addReply(p.id)}
+                                  className="bg-[#002A5C] text-white px-4 rounded-xl text-xs font-bold hover:bg-black transition-colors"
+                                >
+                                  Reply
+                                </button>
+                              </div>
+                              {/* @ mention dropdown for reply */}
+                              {mention?.active === p.id && (
+                                <div className="absolute top-full mt-1 left-0">
+                                  <MentionDropdown
+                                    suggestions={getSuggestions(mention.query)}
+                                    onSelect={(name) => insertMention(name)}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-400 mt-2">
+                              <Link href="/profile" className="text-[#002A5C] font-semibold hover:underline">Create a profile</Link> to reply.
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
+                  );
+                })
+              )}
+            </div>
 
-        {/* Post input */}
-        {profile ? (
-          <div className="bg-white border border-gray-100 rounded-2xl p-4 flex gap-3 items-start sticky bottom-4">
-            <div className="w-9 h-9 rounded-xl bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
-              {profile.displayName[0].toUpperCase()}
-            </div>
-            <div className="flex-1 flex gap-3">
-              <textarea
-                value={postText}
-                onChange={(e) => setPostText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addPost(); } }}
-                placeholder={`Post to ${activeCourse} as ${profile.displayName}...`}
-                rows={2}
-                className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
-              />
-              <button
-                onClick={addPost}
-                disabled={!postText.trim()}
-                className="bg-[#002A5C] text-white px-5 rounded-xl font-bold text-sm hover:bg-black transition-colors self-stretch disabled:opacity-40"
-              >
-                Post
-              </button>
-            </div>
+            {/* Post composer */}
+            {profile ? (
+              <div className="bg-white border border-gray-100 rounded-2xl p-4 flex gap-3 items-start sticky bottom-4">
+                <div className="w-9 h-9 rounded-xl bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0 mt-0.5">
+                  {profile.displayName[0].toUpperCase()}
+                </div>
+                <div className="flex-1 relative">
+                  {/* @ mention dropdown above the composer */}
+                  {mention?.active === "post" && (
+                    <div className="absolute bottom-full mb-2 left-0">
+                      <MentionDropdown
+                        suggestions={getSuggestions(mention.query)}
+                        onSelect={(name) => insertMention(name)}
+                      />
+                    </div>
+                  )}
+                  <div className="flex gap-3">
+                    <textarea
+                      ref={postRef}
+                      value={postText}
+                      onChange={(e) => {
+                        setPostText(e.target.value);
+                        detectMention(e.target.value, "post");
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") { setMention(null); return; }
+                        if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addPost(); }
+                      }}
+                      onBlur={() => setTimeout(() => setMention(null), 150)}
+                      placeholder={`Post to ${activeCourse} as ${profile.displayName}... (use @ to mention someone)`}
+                      rows={2}
+                      className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                    />
+                    <button
+                      onClick={addPost}
+                      disabled={!postText.trim()}
+                      className="bg-[#002A5C] text-white px-5 rounded-xl font-bold text-sm hover:bg-black transition-colors self-stretch disabled:opacity-40"
+                    >
+                      Post
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-300 mt-1.5">Type @ to mention a friend or classmate</p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center">
+                <p className="text-sm text-gray-500 mb-3">You need a profile to post in the community.</p>
+                <Link href="/profile" className="inline-block bg-[#002A5C] text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-black transition-colors">
+                  Create Profile &rarr;
+                </Link>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 text-center">
-            <p className="text-sm text-gray-500 mb-3">You need a profile to post in the community.</p>
-            <Link href="/profile" className="inline-block bg-[#002A5C] text-white font-bold px-6 py-2.5 rounded-xl text-sm hover:bg-black transition-colors">
-              Create Profile →
-            </Link>
-          </div>
-        )}
+        </div>
       </div>
-      </div>
-    </div>
     </div>
   );
 }

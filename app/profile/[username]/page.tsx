@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getProfile, getPublicProfile, saveProfile, type Profile } from "@/lib/profile";
 
@@ -8,14 +8,26 @@ function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-function Avatar({ name, color, size = "lg" }: { name: string; color: string; size?: "sm" | "lg" }) {
-  const cls =
-    size === "lg"
-      ? "w-20 h-20 rounded-2xl text-2xl font-black"
-      : "w-9 h-9 rounded-xl text-xs font-black";
+function ProfilePhoto({
+  name, avatar, avatarImage, size = 80, border = false,
+}: {
+  name: string; avatar: string; avatarImage?: string; size?: number; border?: boolean;
+}) {
+  const shared: CSSProperties = {
+    width: size, height: size, borderRadius: "50%",
+    border: border ? "4px solid white" : "none",
+    flexShrink: 0,
+  };
+  if (avatarImage) {
+    return <img src={avatarImage} alt={name} style={{ ...shared, objectFit: "cover" }} />;
+  }
+  const fontSize = size >= 64 ? 22 : size >= 36 ? 13 : 10;
   return (
-    <div className={`${cls} text-white flex items-center justify-center shrink-0`} style={{ backgroundColor: color }}>
-      {initials(name)}
+    <div
+      style={{ ...shared, backgroundColor: avatar, fontSize }}
+      className="text-white font-black flex items-center justify-center"
+    >
+      {initials(name || "?")}
     </div>
   );
 }
@@ -35,7 +47,6 @@ export default function PublicProfilePage() {
     const myProfile = getProfile();
     setMe(myProfile);
 
-    // If viewing own profile, redirect to /profile
     if (myProfile && myProfile.displayName.toLowerCase() === decoded.toLowerCase()) {
       router.replace("/profile");
       return;
@@ -69,7 +80,6 @@ export default function PublicProfilePage() {
     setTimeout(() => setLinkCopied(false), 2000);
   }
 
-  // -- loading ---------------------------------------------------------------
   if (target === "loading") {
     return (
       <div className="min-h-screen bg-[#F4F6F9] flex items-center justify-center">
@@ -78,7 +88,6 @@ export default function PublicProfilePage() {
     );
   }
 
-  // -- not found -------------------------------------------------------------
   if (!target) {
     return (
       <div className="min-h-screen bg-[#F4F6F9] flex items-center justify-center px-6">
@@ -86,7 +95,7 @@ export default function PublicProfilePage() {
           <div className="w-14 h-14 rounded-2xl bg-gray-100 text-gray-300 flex items-center justify-center mx-auto mb-4 text-2xl font-black">?</div>
           <h2 className="text-xl font-black text-black mb-2">Profile not found</h2>
           <p className="text-gray-400 text-sm mb-6">
-            <span className="font-mono font-semibold text-gray-500">{decoded}</span> hasn&apos;t created a profile yet, or the link is incorrect.
+            <span className="font-mono font-semibold text-gray-500">{decoded}</span> hasn&apos;t created a profile yet.
           </p>
           <button
             onClick={() => router.back()}
@@ -99,63 +108,53 @@ export default function PublicProfilePage() {
     );
   }
 
-  // -- public profile view ---------------------------------------------------
   const programs = target.programs ?? [];
-  const metaLine = [target.year, ...programs].filter(Boolean).join(" · ");
 
   return (
     <div>
-      {/* Header */}
-      <div className="bg-[#002A5C] text-white pt-14 pb-20 px-4 sm:px-6">
-        <div className="max-w-lg mx-auto">
-          <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2">Profile</p>
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight">{target.displayName}</h1>
-          {metaLine && <p className="text-white/50 mt-2 text-sm">{metaLine}</p>}
+      {/* Cover banner */}
+      <div
+        className="h-48"
+        style={{ backgroundColor: target.coverColor ?? "#002A5C" }}
+      />
+
+      <div className="max-w-lg mx-auto px-6 pb-16">
+        {/* Avatar overlapping cover */}
+        <div className="-mt-10 mb-3">
+          <ProfilePhoto
+            name={target.displayName}
+            avatar={target.avatar ?? "#002A5C"}
+            avatarImage={target.avatarImage}
+            size={84}
+            border
+          />
         </div>
-      </div>
 
-      <div className="max-w-lg mx-auto px-6 -mt-8 pb-12 space-y-4">
-
-        {/* Profile card */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-8">
-          <div className="flex items-start gap-5">
-            <Avatar name={target.displayName} color={target.avatar ?? "#002A5C"} />
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-black text-black leading-tight">{target.displayName}</h2>
-              {target.year && <p className="text-sm text-gray-400 mt-0.5">{target.year}</p>}
-              {target.bio && (
-                <p className="text-sm text-gray-500 mt-2 leading-relaxed">{target.bio}</p>
-              )}
-            </div>
-          </div>
-
-          {programs.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-gray-100">
-              {programs.map((prog) => (
-                <span
-                  key={prog}
-                  className="bg-[#002A5C]/8 text-[#002A5C] text-xs font-semibold px-3 py-1.5 rounded-full"
-                >
-                  {prog}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Name + year */}
+        <h1 className="text-2xl font-black text-black leading-tight">{target.displayName}</h1>
+        {target.year && <p className="text-sm text-gray-500 mt-0.5">{target.year}</p>}
 
         {/* Action buttons */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-4">
           {me ? (
-            <button
-              onClick={toggleConnect}
-              className={`flex-1 font-bold py-3 rounded-xl text-sm transition-all ${
-                connected
-                  ? "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"
-                  : "bg-[#002A5C] text-white hover:bg-black"
-              }`}
-            >
-              {connected ? "Remove Connection" : "+ Connect"}
-            </button>
+            <>
+              <button
+                onClick={toggleConnect}
+                className={`flex-1 font-bold py-3 rounded-xl text-sm transition-all ${
+                  connected
+                    ? "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"
+                    : "bg-[#002A5C] text-white hover:bg-black"
+                }`}
+              >
+                {connected ? "Connected" : "+ Connect"}
+              </button>
+              <button
+                onClick={() => router.push(`/messages?with=${encodeURIComponent(target.displayName)}`)}
+                className="px-5 bg-[#F0B429] text-[#002A5C] font-bold py-3 rounded-xl text-sm hover:bg-yellow-400 transition-colors"
+              >
+                Message
+              </button>
+            </>
           ) : (
             <button
               onClick={() => router.push("/profile")}
@@ -176,29 +175,59 @@ export default function PublicProfilePage() {
           </button>
         </div>
 
-        {/* Connections count */}
-        {(target.connections?.length ?? 0) > 0 && (
-          <div className="bg-white border border-gray-100 rounded-2xl px-6 py-4">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Connections</p>
-            <div className="flex flex-wrap gap-2">
-              {target.connections.map((name) => (
-                <button
-                  key={name}
-                  onClick={() => router.push(`/profile/${encodeURIComponent(name)}`)}
-                  className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-xl transition-colors"
-                >
-                  <div
-                    className="w-6 h-6 rounded-lg text-white text-xs font-black flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: "#002A5C" }}
-                  >
-                    {name[0].toUpperCase()}
-                  </div>
-                  <span className="text-sm font-semibold text-black">{name}</span>
-                </button>
-              ))}
+        <div className="mt-5 space-y-4">
+
+          {/* About card */}
+          {(target.bio || programs.length > 0) && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">About</p>
+              {target.bio && (
+                <p className="text-sm text-gray-600 leading-relaxed">{target.bio}</p>
+              )}
+              {target.bio && programs.length > 0 && (
+                <div className="border-t border-gray-100 my-4" />
+              )}
+              {programs.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {programs.map((prog) => (
+                    <span
+                      key={prog}
+                      className="bg-[#002A5C]/8 text-[#002A5C] text-xs font-semibold px-3 py-1.5 rounded-full"
+                    >
+                      {prog}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Connections */}
+          {(target.connections?.length ?? 0) > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                Connections ({target.connections.length})
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {target.connections.map((name) => (
+                  <button
+                    key={name}
+                    onClick={() => router.push(`/profile/${encodeURIComponent(name)}`)}
+                    className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-xl transition-colors"
+                  >
+                    <div
+                      className="w-6 h-6 rounded-full text-white text-xs font-black flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: "#002A5C" }}
+                    >
+                      {name[0].toUpperCase()}
+                    </div>
+                    <span className="text-sm font-semibold text-black">{name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
