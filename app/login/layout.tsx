@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Your Profile",
-  description: "Set up your Varsio profile with your UofT courses and programs.",
+  title: "Sign In",
+  description: "Sign in or create your Varsio account.",
   robots: { index: false, follow: false },
 };
 

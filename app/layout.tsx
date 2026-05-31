@@ -13,9 +13,12 @@ export const metadata: Metadata = {
   keywords: [
     "UofT", "University of Toronto", "student app", "course matcher",
     "study sessions", "UTSG", "UTM", "UTSC", "UofT students", "Varsio",
+    "UofT course finder", "UofT study group", "UofT textbooks",
   ],
   authors: [{ name: "Varsio" }],
   creator: "Varsio",
+  applicationName: "Varsio",
+  category: "education",
   metadataBase: new URL("https://varsio.vercel.app"),
   openGraph: {
     type: "website",
@@ -23,8 +26,9 @@ export const metadata: Metadata = {
     siteName: "Varsio",
     title: "Varsio - Student Platform for University of Toronto",
     description:
-      "Match courses with friends, run AI study sessions, and access tools built for UofT students across all three campuses.",
+      "Match courses with friends, run AI study sessions, and access tools built for UofT students across UTSG, UTM, and UTSC.",
     locale: "en_CA",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Varsio - Student Platform for University of Toronto" }],
   },
   twitter: {
     card: "summary_large_image",
@@ -32,14 +36,12 @@ export const metadata: Metadata = {
     description:
       "Match courses with friends, run AI study sessions, and access tools built for UofT students across all three campuses.",
     creator: "@varsio",
+    images: ["/opengraph-image"],
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
+    googleBot: { index: true, follow: true },
   },
   alternates: {
     canonical: "https://varsio.vercel.app",

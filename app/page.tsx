@@ -1,6 +1,19 @@
 ﻿import Link from "next/link";
 import { ProButton } from "@/components/ProButton";
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Varsio",
+  url: "https://varsio.vercel.app",
+  description: "Varsio is the student super-app for University of Toronto. Match courses with friends, run AI study sessions, chat by course, and access tools built for UTSG, UTM, and UTSC.",
+  applicationCategory: "EducationalApplication",
+  operatingSystem: "Web",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "CAD" },
+  audience: { "@type": "EducationalAudience", educationalRole: "student" },
+  provider: { "@type": "Organization", name: "Varsio", url: "https://varsio.vercel.app" },
+};
+
 // -- App Mockup Components --
 
 function MatcherMockup() {
@@ -162,6 +175,10 @@ const stats = [
 export default function Home() {
   return (
     <div className="bg-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
 
       {/* Hero */}
       <section className="bg-[#002A5C] text-white pt-20 pb-28 sm:pt-28 sm:pb-36 px-4 sm:px-6">
