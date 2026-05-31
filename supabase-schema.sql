@@ -33,7 +33,7 @@ create table if not exists public.room_members (
   id uuid primary key default gen_random_uuid(),
   room_code text references rooms(code) on delete cascade not null,
   name text not null,
-  courses text[] default '{}',
+  courses jsonb default '[]',
   joined_at timestamptz default now()
 );
 alter table public.room_members enable row level security;

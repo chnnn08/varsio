@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getProfile, type Profile } from "@/lib/profile";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 function StudyQuizTabs({ active }: { active: "study" | "quiz" }) {
@@ -62,15 +63,30 @@ type View = "list" | "create" | "session";
 type SessionTab = "materials" | "quiz" | "chat";
 type QuizState = "idle" | "generating" | "ready" | "taking" | "done";
 
-// -- persistence helpers -------------------------------------------------------
-function persistSessions(s: Record<string, StudySession>) {
-  try { localStorage.setItem("varsio_sessions", JSON.stringify(s)); } catch {}
+// -- Supabase helpers ----------------------------------------------------------
+function rowToSession(row: Record<string, unknown>): StudySession {
+  return {
+    id: row.id as string,
+    code: row.code as string,
+    title: row.title as string,
+    subject: row.subject as string,
+    hostName: row.host_name as string,
+    isPublic: row.is_public as boolean,
+    participants: (row.participants as string[]) ?? [],
+    materials: (row.materials as string) ?? "",
+    quizzes: (row.quizzes as QuizQuestion[]) ?? [],
+    messages: (row.messages as SessionMessage[]) ?? [],
+  };
 }
-function loadSessions(): Record<string, StudySession> {
-  try {
-    const raw = localStorage.getItem("varsio_sessions");
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+
+async function saveSessionToDB(s: StudySession): Promise<void> {
+  if (SESSIONS[s.id]) return; // skip demo sessions
+  await supabase.from("study_sessions").upsert({
+    id: s.id, code: s.code, title: s.title, subject: s.subject,
+    host_name: s.hostName, is_public: s.isPublic,
+    participants: s.participants, materials: s.materials,
+    quizzes: s.quizzes, messages: s.messages,
+  });
 }
 
 // -- in-memory store -----------------------------------------------------------
@@ -115,12 +131,7 @@ function generateCode() {
 export default function StudyPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [view, setView] = useState<View>("list");
-  const [sessions, setSessions] = useState<Record<string, StudySession>>(() => {
-    const saved = loadSessions();
-    const merged = { ...SESSIONS, ...saved };
-    Object.assign(SESSIONS, merged);
-    return merged;
-  });
+  const [sessions, setSessions] = useState<Record<string, StudySession>>(SESSIONS);
   const [activeSession, setActiveSession] = useState<StudySession | null>(null);
   const [tab, setTab] = useState<SessionTab>("materials");
 
@@ -147,7 +158,17 @@ export default function StudyPage() {
   const [chatInput, setChatInput] = useState("");
 
   useEffect(() => {
-    getProfile().then(setProfile);
+    async function init() {
+      const p = await getProfile();
+      setProfile(p);
+      const { data } = await supabase.from("study_sessions").select("*");
+      if (data) {
+        const dbSessions: Record<string, StudySession> = {};
+        for (const row of data) dbSessions[row.id] = rowToSession(row as Record<string, unknown>);
+        setSessions((prev) => ({ ...prev, ...dbSessions }));
+      }
+    }
+    init();
   }, []);
 
   // -- helpers ----------------------------------------------------------------
@@ -156,6 +177,7 @@ export default function StudyPage() {
       const updated = { ...s, participants: [...s.participants, profile.displayName] };
       setSessions((prev) => ({ ...prev, [s.id]: updated }));
       setActiveSession(updated);
+      saveSessionToDB(updated);
     } else {
       setActiveSession(s);
     }
@@ -166,7 +188,7 @@ export default function StudyPage() {
     setMaterialsText(s.materials);
   }
 
-  function createSession() {
+  async function createSession() {
     if (!profile) return;
     if (!title.trim() || !subject.trim()) { setFormError("Title and subject are required."); return; }
     const id = generateId();
@@ -175,25 +197,26 @@ export default function StudyPage() {
       hostName: profile.displayName, isPublic,
       participants: [profile.displayName], materials: "", quizzes: [], messages: [],
     };
-    const next = { ...sessions, [id]: session };
-    updateSessions(next);
+    setSessions((prev) => ({ ...prev, [id]: session }));
+    await saveSessionToDB(session);
     setTitle(""); setSubject(""); setIsPublic(true); setFormError("");
     openSession(session);
   }
 
-  function updateSessions(updated: Record<string, StudySession>) {
-    setSessions(updated);
-    persistSessions(updated);
+  function updateSession(s: StudySession) {
+    setSessions((prev) => ({ ...prev, [s.id]: s }));
+    saveSessionToDB(s);
   }
 
-  function joinPrivate() {
+  async function joinPrivate() {
     const code = joinCodeInput.trim().toUpperCase();
-    // check current state AND localStorage (in case created in another tab)
     let session = Object.values(sessions).find((s) => s.code === code);
     if (!session) {
-      const saved = loadSessions();
-      session = Object.values(saved).find((s) => s.code === code);
-      if (session) updateSessions({ ...sessions, ...saved });
+      const { data } = await supabase.from("study_sessions").select("*").eq("code", code).single();
+      if (data) {
+        session = rowToSession(data as Record<string, unknown>);
+        setSessions((prev) => ({ ...prev, [session!.id]: session! }));
+      }
     }
     if (!session) { setFormError("Room not found."); return; }
     setJoinCodeInput(""); setFormError("");
@@ -208,7 +231,7 @@ export default function StudyPage() {
     // save materials to session
     if (activeSession) {
       const updated = { ...activeSession, materials: materialsText };
-      setSessions((prev) => ({ ...prev, [activeSession.id]: updated }));
+      updateSession(updated);
       setActiveSession(updated);
     }
 
@@ -223,7 +246,7 @@ export default function StudyPage() {
       setQuestions(data.questions);
       if (activeSession) {
         const updated = { ...activeSession, materials: materialsText, quizzes: data.questions };
-        setSessions((prev) => ({ ...prev, [activeSession.id]: updated }));
+        updateSession(updated);
         setActiveSession(updated);
       }
       setQuizState("ready");
@@ -266,7 +289,7 @@ export default function StudyPage() {
       text: chatInput.trim(), time: "just now", reported: false,
     };
     const updated = { ...activeSession, messages: [...activeSession.messages, msg] };
-    setSessions((prev) => ({ ...prev, [activeSession.id]: updated }));
+    updateSession(updated);
     setActiveSession(updated);
     setChatInput("");
   }
@@ -277,7 +300,7 @@ export default function StudyPage() {
       ...activeSession,
       messages: activeSession.messages.map((m) => m.id === msgId ? { ...m, reported: true } : m),
     };
-    setSessions((prev) => ({ ...prev, [activeSession.id]: updated }));
+    updateSession(updated);
     setActiveSession(updated);
   }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getProfile, type Profile } from "@/lib/profile";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 function StudyQuizTabs({ active }: { active: "study" | "quiz" }) {
@@ -54,17 +55,15 @@ const QUIZ_STORE: Record<string, Quiz> = {};
 function generateId() { return Math.random().toString(36).substring(2, 10); }
 function generateCode() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
 
-function saveToStorage(quizzes: Quiz[]) {
-  try { localStorage.setItem("varsio_quizzes", JSON.stringify(quizzes)); } catch {}
-}
-function loadFromStorage(): Quiz[] {
-  try {
-    const raw = localStorage.getItem("varsio_quizzes");
-    if (!raw) return [];
-    const list = JSON.parse(raw) as Quiz[];
-    list.forEach((q) => { QUIZ_STORE[q.code] = q; });
-    return list;
-  } catch { return []; }
+function rowToQuiz(row: Record<string, unknown>): Quiz {
+  return {
+    id: row.id as string,
+    code: row.code as string,
+    title: row.title as string,
+    course: (row.course as string) ?? "",
+    createdBy: row.created_by as string,
+    questions: (row.questions as QuizQuestion[]) ?? [],
+  };
 }
 
 function blankQuestion() {
@@ -106,8 +105,19 @@ export default function QuizPage() {
   const [showExp, setShowExp] = useState(false);
 
   useEffect(() => {
-    getProfile().then(setProfile);
-    setMyQuizzes(loadFromStorage());
+    async function init() {
+      const p = await getProfile();
+      setProfile(p);
+      if (p) {
+        const { data } = await supabase.from("quizzes").select("*").eq("created_by", p.displayName).order("created_at", { ascending: false });
+        if (data) {
+          const quizzes = data.map((r) => rowToQuiz(r as Record<string, unknown>));
+          quizzes.forEach((q) => { QUIZ_STORE[q.code] = q; });
+          setMyQuizzes(quizzes);
+        }
+      }
+    }
+    init();
   }, []);
 
   // -- helpers ----------------------------------------------------------------
@@ -117,7 +127,7 @@ export default function QuizPage() {
     setMaterials(""); setAiQuestions([]); setGenError("");
   }
 
-  function saveAndPreview(questions: QuizQuestion[]) {
+  async function saveAndPreview(questions: QuizQuestion[]) {
     if (!profile || questions.length === 0) return;
     const quiz: Quiz = {
       id: generateId(), code: generateCode(),
@@ -126,17 +136,26 @@ export default function QuizPage() {
       createdBy: profile.displayName, questions,
     };
     QUIZ_STORE[quiz.code] = quiz;
-    const updated = [quiz, ...myQuizzes];
-    setMyQuizzes(updated);
-    saveToStorage(updated);
+    setMyQuizzes((prev) => [quiz, ...prev]);
+    await supabase.from("quizzes").insert({
+      id: quiz.id, code: quiz.code, title: quiz.title,
+      course: quiz.course || null, created_by: quiz.createdBy, questions: quiz.questions,
+    });
     setActiveQuiz(quiz);
     setView("preview");
     resetNew();
   }
 
-  function joinByCode() {
+  async function joinByCode() {
     const code = joinCode.trim().toUpperCase();
-    const quiz = QUIZ_STORE[code];
+    let quiz = QUIZ_STORE[code];
+    if (!quiz) {
+      const { data } = await supabase.from("quizzes").select("*").eq("code", code).single();
+      if (data) {
+        quiz = rowToQuiz(data as Record<string, unknown>);
+        QUIZ_STORE[quiz.code] = quiz;
+      }
+    }
     if (!quiz) { setJoinError("Quiz not found. Check the code and try again."); return; }
     setJoinError(""); setJoinCode("");
     setActiveQuiz(quiz); setView("preview");

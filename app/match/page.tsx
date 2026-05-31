@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createWorker } from "tesseract.js";
+import { supabase } from "@/lib/supabase";
 
 // -- types --------------------------------------------------------------------
 type InputMethod = "manual" | "screenshot";
@@ -11,20 +12,30 @@ type Member = { name: string; courses: CourseEntry[] };
 type Room = { code: string; members: Member[] };
 type CourseEntry = { code: string; section: string };
 
-// -- room persistence (always read/write localStorage directly) ---------------
+// -- room persistence via Supabase --------------------------------------------
 function generateCode() {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-function loadRooms(): Record<string, Room> {
-  try {
-    const raw = localStorage.getItem("varsio_rooms");
-    return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+async function fetchRoom(code: string): Promise<Room | null> {
+  const { data: roomRow } = await supabase.from("rooms").select("code").eq("code", code).single();
+  if (!roomRow) return null;
+  const { data: memberRows } = await supabase
+    .from("room_members").select("name, courses").eq("room_code", code).order("joined_at");
+  const members: Member[] = (memberRows ?? []).map((r) => ({
+    name: r.name as string,
+    courses: r.courses as CourseEntry[],
+  }));
+  return { code, members };
 }
 
-function saveRooms(rooms: Record<string, Room>): void {
-  try { localStorage.setItem("varsio_rooms", JSON.stringify(rooms)); } catch {}
+async function createRoom(code: string, member: Member): Promise<void> {
+  await supabase.from("rooms").insert({ code });
+  await supabase.from("room_members").insert({ room_code: code, name: member.name, courses: member.courses });
+}
+
+async function joinRoom(code: string, member: Member): Promise<void> {
+  await supabase.from("room_members").insert({ room_code: code, name: member.name, courses: member.courses });
 }
 
 // Extract UofT-style course codes from OCR text
@@ -89,6 +100,7 @@ function MatchPageInner() {
   const [room, setRoom] = useState<Room | null>(null);
   const [roomCode, setRoomCode] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -157,29 +169,39 @@ function MatchPageInner() {
   }, []);
 
   // -- room actions -------------------------------------------------------------
-  function submit() {
+  async function submit() {
     if (!name.trim()) { setError("Enter your name."); return; }
     if (courses.length === 0) { setError("Add at least one course."); return; }
-    if (mode === "join") {
-      const code = joinCode.trim().toUpperCase();
-      const rooms = loadRooms();
-      const found = rooms[code];
-      if (!found) { setError("Room not found. Check the code and try again."); return; }
-      rooms[code] = { ...found, members: [...found.members, { name: name.trim(), courses }] };
-      saveRooms(rooms);
-      setRoom({ ...rooms[code] });
-      setRoomCode(code);
-    } else {
-      const code = generateCode();
-      const rooms = loadRooms();
-      const newRoom: Room = { code, members: [{ name: name.trim(), courses }] };
-      rooms[code] = newRoom;
-      saveRooms(rooms);
-      setRoom(newRoom);
-      setRoomCode(code);
-    }
-    setStep("room");
+    setSubmitting(true);
     setError("");
+    const member: Member = { name: name.trim(), courses };
+    try {
+      if (mode === "join") {
+        const code = joinCode.trim().toUpperCase();
+        const existing = await fetchRoom(code);
+        if (!existing) { setError("Room not found. Check the code and try again."); return; }
+        await joinRoom(code, member);
+        const updated = await fetchRoom(code);
+        setRoom(updated!);
+        setRoomCode(code);
+      } else {
+        const code = generateCode();
+        await createRoom(code, member);
+        setRoom({ code, members: [member] });
+        setRoomCode(code);
+      }
+      setStep("room");
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function refreshRoom() {
+    if (!roomCode) return;
+    const updated = await fetchRoom(roomCode);
+    if (updated) setRoom(updated);
   }
 
   function reset() {
@@ -214,16 +236,25 @@ function MatchPageInner() {
               <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">Room Code</p>
               <p className="text-4xl font-black tracking-[0.25em] text-[#002A5C] font-mono">{roomCode}</p>
             </div>
-            <button
-              onClick={copyCode}
-              className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${
-                copied
-                  ? "bg-green-50 border-green-200 text-green-700"
-                  : "bg-white border-gray-200 text-gray-600 hover:border-[#002A5C] hover:text-[#002A5C]"
-              }`}
-            >
-              {copied ? "✓ Copied" : "Copy Code"}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={refreshRoom}
+                className="px-4 py-2.5 rounded-xl text-sm font-bold border border-gray-200 text-gray-500 hover:border-[#002A5C] hover:text-[#002A5C] transition-all"
+                title="Refresh members"
+              >
+                ↻
+              </button>
+              <button
+                onClick={copyCode}
+                className={`px-5 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                  copied
+                    ? "bg-green-50 border-green-200 text-green-700"
+                    : "bg-white border-gray-200 text-gray-600 hover:border-[#002A5C] hover:text-[#002A5C]"
+                }`}
+              >
+                {copied ? "✓ Copied" : "Copy Code"}
+              </button>
+            </div>
           </div>
 
           {/* Match result */}
@@ -506,10 +537,14 @@ function MatchPageInner() {
 
           <button
             onClick={submit}
-            disabled={scanning}
-            className="w-full bg-[#002A5C] text-white font-bold py-3.5 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={scanning || submitting}
+            className="w-full bg-[#002A5C] text-white font-bold py-3.5 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {mode === "create" ? "Create Room →" : "Join Room →"}
+            {submitting ? (
+              <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />{mode === "create" ? "Creating..." : "Joining..."}</>
+            ) : (
+              mode === "create" ? "Create Room →" : "Join Room →"
+            )}
           </button>
         </div>
       </div>
