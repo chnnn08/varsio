@@ -539,10 +539,18 @@ export default function ProfilePage() {
   // VIEW MODE
   // ---------------------------------------------------------------------------
   return (
-    <div>
+    <div className="bg-[#F4F6F9] min-h-screen pb-16">
+
+      {/* Saved toast */}
+      {saved && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-[#1a8c4e] text-white text-xs font-bold px-5 py-2.5 rounded-full shadow-lg">
+          Profile saved
+        </div>
+      )}
+
       {/* Cover banner */}
       <div
-        className="h-48"
+        className="h-52 w-full"
         style={{
           backgroundColor: profile.coverColor ?? "#002A5C",
           backgroundImage: profile.coverImage ? `url(${profile.coverImage})` : undefined,
@@ -551,139 +559,166 @@ export default function ProfilePage() {
         }}
       />
 
-      <div className="max-w-lg mx-auto px-6 pb-16">
-        {/* Avatar overlapping cover */}
-        <div className="-mt-10 mb-3">
-          <ProfilePhoto
-            name={profile.displayName}
-            avatar={profile.avatar ?? "#002A5C"}
-            avatarImage={profile.avatarImage}
-            size={84}
-            border
-          />
-        </div>
+      <div className="max-w-2xl mx-auto px-4 -mt-10 space-y-3">
 
-        {/* Name + year */}
-        <h1 className="text-2xl font-black text-black leading-tight">{profile.displayName}</h1>
-        {profile.year && (
-          <p className="text-sm text-gray-500 mt-0.5">{profile.year}</p>
-        )}
+        {/* ── MAIN PROFILE CARD ─────────────────────────────────── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+          <div className="px-6 pb-6">
 
-        {saved && <p className="text-green-600 text-xs font-semibold mt-2">Profile saved.</p>}
-
-        <div className="mt-5 space-y-4">
-
-          {/* About card */}
-          {(profile.bio || programs.length > 0) && (
-            <div className="bg-white border border-gray-100 rounded-2xl p-5">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">About</p>
-              {profile.bio && (
-                <p className="text-sm text-gray-600 leading-relaxed">{profile.bio}</p>
-              )}
-              {profile.bio && programs.length > 0 && (
-                <div className="border-t border-gray-100 my-4" />
-              )}
-              {programs.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {programs.map((prog) => (
-                    <span
-                      key={prog}
-                      className="bg-[#002A5C]/8 text-[#002A5C] text-xs font-semibold px-3 py-1.5 rounded-full"
-                    >
-                      {prog}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Connections */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-5">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-              Connections ({profile.connections.length})
-            </p>
-
-            <div className="flex gap-2 mb-3">
-              <input
-                value={connInput}
-                onChange={(e) => { setConnInput(e.target.value); setConnError(""); }}
-                onKeyDown={(e) => e.key === "Enter" && addConnection()}
-                placeholder="Add by display name..."
-                className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+            {/* Avatar + action buttons row */}
+            <div className="flex items-end justify-between -mt-10 mb-4">
+              <ProfilePhoto
+                name={profile.displayName}
+                avatar={profile.avatar ?? "#002A5C"}
+                avatarImage={profile.avatarImage}
+                size={96}
+                border
               />
+              <div className="flex gap-2 pb-1">
+                <button
+                  onClick={copyProfileLink}
+                  className={`text-xs font-bold px-4 py-2 rounded-xl border transition-all ${
+                    linkCopied
+                      ? "bg-[#1a8c4e] text-white border-[#1a8c4e]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#002A5C] hover:text-[#002A5C]"
+                  }`}
+                >
+                  {linkCopied ? "Copied!" : "Share"}
+                </button>
+                <button
+                  onClick={() => setEditing(true)}
+                  className="text-xs font-bold px-4 py-2 rounded-xl bg-[#002A5C] text-white hover:bg-black transition-colors"
+                >
+                  Edit Profile
+                </button>
+              </div>
+            </div>
+
+            {/* Name */}
+            <h1 className="text-2xl font-black text-black leading-tight">{profile.displayName}</h1>
+
+            {/* Year + programs inline */}
+            {(profile.year || programs.length > 0) && (
+              <p className="text-sm text-gray-500 mt-1 leading-relaxed">
+                {profile.year}
+                {profile.year && programs.length > 0 && " · "}
+                {programs.slice(0, 3).join(" · ")}
+                {programs.length > 3 && ` · +${programs.length - 3} more`}
+              </p>
+            )}
+
+            {/* Bio */}
+            {profile.bio && (
+              <p className="text-sm text-gray-600 mt-3 leading-relaxed">{profile.bio}</p>
+            )}
+
+            {/* Connections stat */}
+            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-sm">
+                <span className="font-black text-[#002A5C]">{profile.connections.length}</span>
+                <span className="text-gray-400 ml-1">
+                  {profile.connections.length === 1 ? "connection" : "connections"}
+                </span>
+              </p>
               <button
-                onClick={addConnection}
-                className="bg-[#002A5C] text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-black transition-colors shrink-0"
+                onClick={handleDelete}
+                className="text-xs text-gray-300 hover:text-red-400 transition-colors"
               >
-                Add
+                Delete account
               </button>
             </div>
-            {connError && <p className="text-red-500 text-xs mb-3 font-medium">{connError}</p>}
-
-            {profile.connections.length === 0 ? (
-              <p className="text-xs text-gray-300 text-center py-3">
-                No connections yet. Visit someone&apos;s profile to connect, or add by name above.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {profile.connections.map((name) => (
-                  <div key={name} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-gray-50 rounded-xl">
-                    <Link
-                      href={`/profile/${encodeURIComponent(name)}`}
-                      className="flex items-center gap-2.5 flex-1 min-w-0 hover:opacity-80 transition-opacity"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0">
-                        {name[0].toUpperCase()}
-                      </div>
-                      <span className="text-sm font-semibold text-black truncate">{name}</span>
-                    </Link>
-                    <button
-                      onClick={() => removeConnection(name)}
-                      className="text-xs text-gray-300 hover:text-red-400 transition-colors font-semibold shrink-0"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Share profile */}
-          <div className="bg-[#002A5C]/5 border border-[#002A5C]/10 rounded-2xl p-4 flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-[#002A5C] mb-0.5">Your public profile</p>
-              <p className="text-xs text-gray-400 font-mono truncate">
-                varsio.vercel.app/profile/{profile.displayName}
-              </p>
-            </div>
-            <button
-              onClick={copyProfileLink}
-              className={`text-xs font-bold px-4 py-2 rounded-xl shrink-0 transition-all ${
-                linkCopied ? "bg-[#1a8c4e] text-white" : "bg-[#002A5C] text-white hover:bg-black"
-              }`}
-            >
-              {linkCopied ? "Copied!" : "Share"}
-            </button>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setEditing(true)}
-              className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors"
-            >
-              Edit Profile
-            </button>
-            <button
-              onClick={handleDelete}
-              className="px-5 border border-red-200 text-red-400 font-semibold py-3 rounded-xl text-sm hover:bg-red-50 transition-colors"
-            >
-              Delete
-            </button>
           </div>
         </div>
+
+        {/* ── PROGRAMS CARD ─────────────────────────────────────── */}
+        {programs.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-5">
+            <h3 className="text-sm font-black text-black mb-3">Programs</h3>
+            <div className="flex flex-wrap gap-2">
+              {programs.map((prog) => (
+                <span
+                  key={prog}
+                  className="bg-[#002A5C]/8 text-[#002A5C] text-xs font-semibold px-3 py-1.5 rounded-full"
+                >
+                  {prog}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── CONNECTIONS CARD ──────────────────────────────────── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-5">
+          <h3 className="text-sm font-black text-black mb-4">Connections</h3>
+
+          <div className="flex gap-2 mb-4">
+            <input
+              value={connInput}
+              onChange={(e) => { setConnInput(e.target.value); setConnError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && addConnection()}
+              placeholder="Add by display name..."
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+            />
+            <button
+              onClick={addConnection}
+              className="bg-[#002A5C] text-white font-bold px-4 py-2 rounded-xl text-sm hover:bg-black transition-colors shrink-0"
+            >
+              Add
+            </button>
+          </div>
+          {connError && <p className="text-red-500 text-xs mb-3 font-medium">{connError}</p>}
+
+          {profile.connections.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-sm font-semibold text-gray-400 mb-1">No connections yet</p>
+              <p className="text-xs text-gray-300">Visit someone&apos;s profile to connect, or add by name above.</p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {profile.connections.map((name) => (
+                <div key={name} className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 transition-colors">
+                  <Link
+                    href={`/profile/${encodeURIComponent(name)}`}
+                    className="flex items-center gap-3 flex-1 min-w-0"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#002A5C] text-white text-xs font-black flex items-center justify-center shrink-0">
+                      {name[0].toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-black truncate">{name}</p>
+                      <p className="text-xs text-gray-400">Varsio</p>
+                    </div>
+                  </Link>
+                  <button
+                    onClick={() => removeConnection(name)}
+                    className="text-xs text-gray-300 hover:text-red-400 transition-colors font-semibold shrink-0 px-2 py-1"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── PUBLIC PROFILE LINK ───────────────────────────────── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-6 py-4 flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-gray-500 mb-0.5">Public profile link</p>
+            <p className="text-xs text-gray-400 font-mono truncate">
+              varsio.vercel.app/profile/{profile.displayName}
+            </p>
+          </div>
+          <button
+            onClick={copyProfileLink}
+            className={`text-xs font-bold px-4 py-2 rounded-xl shrink-0 transition-all ${
+              linkCopied ? "bg-[#1a8c4e] text-white" : "border border-gray-200 text-gray-600 hover:border-[#002A5C] hover:text-[#002A5C]"
+            }`}
+          >
+            {linkCopied ? "Copied!" : "Copy link"}
+          </button>
+        </div>
+
       </div>
     </div>
   );
