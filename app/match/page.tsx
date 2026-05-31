@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createWorker } from "tesseract.js";
 import { supabase } from "@/lib/supabase";
+import { track } from "@vercel/analytics";
 
 // -- types --------------------------------------------------------------------
 type InputMethod = "manual" | "screenshot";
@@ -184,11 +185,13 @@ function MatchPageInner() {
         const updated = await fetchRoom(code);
         setRoom(updated!);
         setRoomCode(code);
+        track("room_joined", { courses: courses.length });
       } else {
         const code = generateCode();
         await createRoom(code, member);
         setRoom({ code, members: [member] });
         setRoomCode(code);
+        track("room_created", { courses: courses.length });
       }
       setStep("room");
     } catch {

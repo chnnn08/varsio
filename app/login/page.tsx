@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { track } from "@vercel/analytics";
 import Link from "next/link";
 
 type Tab = "signin" | "signup";
@@ -27,6 +28,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+    track("user_signed_in");
     router.push("/profile");
   }
 
@@ -42,6 +44,7 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+    track("user_signed_up");
     setSuccess("Account created! Check your email to confirm, then sign in.");
     setLoading(false);
     setTab("signin");

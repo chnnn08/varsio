@@ -14,6 +14,38 @@ const jsonLd = {
   provider: { "@type": "Organization", name: "Varsio", url: "https://varsio.vercel.app" },
 };
 
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is Varsio?",
+      acceptedAnswer: { "@type": "Answer", text: "Varsio is a free student platform built for University of Toronto students. It lets you find which courses you share with friends, run AI-powered study sessions, chat by course code, and access student tools." },
+    },
+    {
+      "@type": "Question",
+      name: "Is Varsio free?",
+      acceptedAnswer: { "@type": "Answer", text: "Yes, Varsio is completely free for all UofT students across UTSG, UTM, and UTSC." },
+    },
+    {
+      "@type": "Question",
+      name: "How does the UofT course matcher work?",
+      acceptedAnswer: { "@type": "Answer", text: "You enter your courses manually or upload an ACORN timetable screenshot. Varsio generates a 6-character room code you share with friends. When they join, you instantly see which courses and sections you have in common." },
+    },
+    {
+      "@type": "Question",
+      name: "How does the AI study session work?",
+      acceptedAnswer: { "@type": "Answer", text: "You paste your lecture notes or textbook excerpts into a study session. Varsio uses AI to generate multiple-choice quiz questions tailored to your material. You can invite classmates to join and take the quiz together." },
+    },
+    {
+      "@type": "Question",
+      name: "Which UofT campuses does Varsio support?",
+      acceptedAnswer: { "@type": "Answer", text: "Varsio supports all three University of Toronto campuses: St. George (UTSG), Mississauga (UTM), and Scarborough (UTSC)." },
+    },
+  ],
+};
+
 // -- App Mockup Components --
 
 function MatcherMockup() {
@@ -175,10 +207,8 @@ const stats = [
 export default function Home() {
   return (
     <div className="bg-white">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
 
       {/* Hero */}
       <section className="bg-[#002A5C] text-white pt-20 pb-28 sm:pt-28 sm:pb-36 px-4 sm:px-6">

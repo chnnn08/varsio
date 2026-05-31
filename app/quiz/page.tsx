@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { getProfile, type Profile } from "@/lib/profile";
 import { supabase } from "@/lib/supabase";
+import { track } from "@vercel/analytics";
 import Link from "next/link";
 
 function StudyQuizTabs({ active }: { active: "study" | "quiz" }) {
@@ -141,6 +142,7 @@ export default function QuizPage() {
       id: quiz.id, code: quiz.code, title: quiz.title,
       course: quiz.course || null, created_by: quiz.createdBy, questions: quiz.questions,
     });
+    track("quiz_created", { questions: questions.length, course: quiz.course, mode: createMode });
     setActiveQuiz(quiz);
     setView("preview");
     resetNew();

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getProfile, saveProfile, clearProfile, type Profile } from "@/lib/profile";
 import { supabase } from "@/lib/supabase";
+import { track } from "@vercel/analytics";
 
 const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year", "Graduate", "Alumni"];
 
@@ -224,8 +225,10 @@ export default function ProfilePage() {
     setProfile(p);
     setEditing(false);
     if (isNew) {
+      track("profile_created", { year: p.year, programs: p.programs.length });
       router.push("/match?welcome=1");
     } else {
+      track("profile_updated");
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     }

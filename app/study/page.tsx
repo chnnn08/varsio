@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { getProfile, type Profile } from "@/lib/profile";
 import { supabase } from "@/lib/supabase";
+import { track } from "@vercel/analytics";
 import Link from "next/link";
 
 function StudyQuizTabs({ active }: { active: "study" | "quiz" }) {
@@ -199,6 +200,7 @@ export default function StudyPage() {
     };
     setSessions((prev) => ({ ...prev, [id]: session }));
     await saveSessionToDB(session);
+    track("study_session_created", { subject: session.subject, isPublic });
     setTitle(""); setSubject(""); setIsPublic(true); setFormError("");
     openSession(session);
   }
@@ -249,6 +251,7 @@ export default function StudyPage() {
         updateSession(updated);
         setActiveSession(updated);
       }
+      track("quiz_generated", { questions: data.questions.length });
       setQuizState("ready");
       setTab("quiz");
     } catch {

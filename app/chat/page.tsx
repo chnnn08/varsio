@@ -6,6 +6,7 @@ import { getProfile, type Profile } from "@/lib/profile";
 import { getConvo, sendDM, getConvoPartners, getLastMessage, type Message as DM } from "@/lib/messages";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { track } from "@vercel/analytics";
 
 type Reply = { id: number; author: string; text: string; time: string };
 type Post = {
@@ -280,6 +281,7 @@ function ChatInner() {
 
   function addPost() {
     if (!postText.trim() || !profile) return;
+    track("post_created", { course: activeCourse });
     const post: Post = {
       id: Date.now(), author: profile.displayName, text: postText.trim(),
       upvotes: 0, downvotes: 0, time: "just now", reported: false,
@@ -340,6 +342,7 @@ function ChatInner() {
 
   async function handleDMSend() {
     if (!dmInput.trim() || !profile || !dmActive) return;
+    track("dm_sent");
     await sendDM(profile.displayName, dmActive, dmInput.trim());
     const [convo, last] = await Promise.all([
       getConvo(profile.displayName, dmActive),
