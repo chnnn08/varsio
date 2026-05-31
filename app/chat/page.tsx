@@ -8,9 +8,9 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { track } from "@vercel/analytics";
 
-type Reply = { id: number; author: string; text: string; time: string };
+type Reply = { id: string; author: string; text: string; time: string };
 type Post = {
-  id: number;
+  id: string;
   author: string;
   text: string;
   upvotes: number;
@@ -20,24 +20,68 @@ type Post = {
   replies: Reply[];
   voted: "up" | "down" | null;
   showReplies: boolean;
+  isDemo?: boolean;
 };
 type Thread = { course: string; posts: Post[] };
-type MentionState = { active: "post" | number; query: string } | null;
+type MentionState = { active: string; query: string } | null;
+
+function formatTime(date: Date): string {
+  const diff = (Date.now() - date.getTime()) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+async function loadCoursePostsFromDB(course: string): Promise<Post[]> {
+  const { data: posts } = await supabase
+    .from("chat_posts")
+    .select("*")
+    .eq("course", course)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (!posts || posts.length === 0) return [];
+  const postIds = posts.map((p) => p.id as string);
+  const { data: replies } = await supabase
+    .from("chat_replies")
+    .select("*")
+    .in("post_id", postIds)
+    .order("created_at", { ascending: true });
+  return posts.map((p) => ({
+    id: p.id as string,
+    author: p.author as string,
+    text: p.text as string,
+    upvotes: (p.upvotes as number) ?? 0,
+    downvotes: (p.downvotes as number) ?? 0,
+    time: formatTime(new Date(p.created_at as string)),
+    reported: (p.reported as boolean) ?? false,
+    voted: null,
+    showReplies: false,
+    replies: (replies ?? [])
+      .filter((r) => r.post_id === p.id)
+      .map((r) => ({
+        id: r.id as string,
+        author: r.author as string,
+        text: r.text as string,
+        time: formatTime(new Date(r.created_at as string)),
+      })),
+  }));
+}
 
 const INITIAL_THREADS: Thread[] = [
   {
     course: "CSC108H1",
     posts: [
       {
-        id: 1, author: "alex_cs",
+        id: "demo-1", isDemo: true, author: "alex_cs",
         text: "Did anyone understand the recursion lecture? I keep getting lost on the base case.",
         upvotes: 12, downvotes: 2, time: "2h ago", reported: false, voted: null, showReplies: false,
         replies: [
-          { id: 101, author: "maya_t", text: "Think of the base case as the condition that stops the recursion. Start there and work backwards.", time: "1h ago" },
+          { id: "demo-101", author: "maya_t", text: "Think of the base case as the condition that stops the recursion. Start there and work backwards.", time: "1h ago" },
         ],
       },
       {
-        id: 2, author: "priya_s",
+        id: "demo-2", isDemo: true, author: "priya_s",
         text: "Reminder that office hours are today at 3pm in BA3200.",
         upvotes: 18, downvotes: 0, time: "3h ago", reported: false, voted: null, showReplies: false,
         replies: [],
@@ -48,11 +92,11 @@ const INITIAL_THREADS: Thread[] = [
     course: "MAT137Y1",
     posts: [
       {
-        id: 3, author: "james_w",
+        id: "demo-3", isDemo: true, author: "james_w",
         text: "Midterm covers up to 4.3. Anyone want to form a study group this weekend?",
         upvotes: 21, downvotes: 1, time: "3h ago", reported: false, voted: null, showReplies: false,
         replies: [
-          { id: 102, author: "leo_m", text: "I'm in! Saturday afternoon works for me.", time: "2h ago" },
+          { id: "demo-102", author: "leo_m", text: "I'm in! Saturday afternoon works for me.", time: "2h ago" },
         ],
       },
     ],
@@ -61,7 +105,7 @@ const INITIAL_THREADS: Thread[] = [
     course: "ECO101H1",
     posts: [
       {
-        id: 4, author: "priya_s",
+        id: "demo-4", isDemo: true, author: "priya_s",
         text: "Prof's slides for week 6 are now on Quercus.",
         upvotes: 5, downvotes: 0, time: "30m ago", reported: false, voted: null, showReplies: false,
         replies: [],
@@ -143,7 +187,7 @@ function ChatInner() {
   const [newCourse, setNewCourse] = useState("");
   const [postText, setPostText] = useState("");
   const [search, setSearch] = useState("");
-  const [replyInputs, setReplyInputs] = useState<Record<number, string>>({});
+  const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [sort, setSort] = useState<"top" | "new">("top");
   const [linkCopied, setLinkCopied] = useState(false);
   const [mention, setMention] = useState<MentionState>(null);
@@ -158,9 +202,12 @@ function ChatInner() {
   const [newDMName, setNewDMName] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "thread">("list");
   const [lastMessages, setLastMessages] = useState<Record<string, DM | null>>({});
+  const [dmUnread, setDmUnread] = useState(0);
   const dmBottomRef = useRef<HTMLDivElement>(null);
   const dmInputRef = useRef<HTMLTextAreaElement>(null);
   const newDMRef = useRef<HTMLInputElement>(null);
+  const dmActiveRef = useRef<string | null>(null);
+  dmActiveRef.current = dmActive;
 
   useEffect(() => {
     async function init() {
@@ -211,6 +258,50 @@ function ChatInner() {
     dmBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [dmConvo]);
 
+  // Load DB posts whenever the active course changes
+  useEffect(() => {
+    loadCoursePostsFromDB(activeCourse).then((dbPosts) => {
+      if (dbPosts.length === 0) return;
+      setThreads((prev) => {
+        const has = prev.find((t) => t.course === activeCourse);
+        if (has) return prev.map((t) => t.course === activeCourse ? { ...t, posts: dbPosts } : t);
+        return [...prev, { course: activeCourse, posts: dbPosts }];
+      });
+    });
+  }, [activeCourse]);
+
+  // Real-time incoming DM subscription
+  useEffect(() => {
+    if (!profile) return;
+    const myNameL = profile.displayName.toLowerCase();
+    const channel = supabase
+      .channel("incoming-dms")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const row = payload.new as Record<string, unknown>;
+        if ((row.to_user as string).toLowerCase() !== myNameL) return;
+        const fromUser = row.from_user as string;
+        const msg: DM = {
+          id: row.id as string,
+          from: fromUser,
+          to: row.to_user as string,
+          text: row.text as string,
+          ts: new Date(row.created_at as string).getTime(),
+        };
+        if (dmActiveRef.current?.toLowerCase() === fromUser.toLowerCase()) {
+          setDmConvo((prev) => [...prev, msg]);
+        } else {
+          setDmUnread((prev) => prev + 1);
+        }
+        setLastMessages((prev) => ({ ...prev, [fromUser]: msg }));
+        setDmPartners((prev) => {
+          const without = prev.filter((n) => n.toLowerCase() !== fromUser.toLowerCase());
+          return [fromUser, ...without];
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [profile]);
+
   // -- chat helpers --
   function copyLink() {
     const url = `${window.location.origin}/chat?course=${activeCourse}`;
@@ -260,7 +351,7 @@ function ChatInner() {
     setMention(null);
   }
 
-  function updatePost(id: number, updater: (p: Post) => Post) {
+  function updatePost(id: string, updater: (p: Post) => Post) {
     setThreads((prev) =>
       prev.map((t) =>
         t.course === activeCourse ? { ...t, posts: t.posts.map((p) => (p.id === id ? updater(p) : p)) } : t
@@ -268,41 +359,67 @@ function ChatInner() {
     );
   }
 
-  function vote(postId: number, dir: "up" | "down") {
-    updatePost(postId, (p) => {
-      if (p.voted === dir) {
-        return { ...p, voted: null, upvotes: dir === "up" ? p.upvotes - 1 : p.upvotes, downvotes: dir === "down" ? p.downvotes - 1 : p.downvotes };
-      }
-      const removeOld = p.voted === "up" ? { upvotes: p.upvotes - 1 } : p.voted === "down" ? { downvotes: p.downvotes - 1 } : {};
-      const addNew = dir === "up" ? { upvotes: p.upvotes + 1 } : { downvotes: p.downvotes + 1 };
-      return { ...p, ...removeOld, ...addNew, voted: dir };
-    });
+  function vote(postId: string, dir: "up" | "down") {
+    const post = threads.flatMap((t) => t.posts).find((p) => p.id === postId);
+    if (!post) return;
+    let up = post.upvotes, down = post.downvotes;
+    let newVoted: "up" | "down" | null;
+    if (post.voted === dir) {
+      if (dir === "up") up--; else down--;
+      newVoted = null;
+    } else {
+      if (post.voted === "up") up--;
+      if (post.voted === "down") down--;
+      if (dir === "up") up++; else down++;
+      newVoted = dir;
+    }
+    updatePost(postId, (p) => ({ ...p, voted: newVoted, upvotes: up, downvotes: down }));
+    if (!post.isDemo) {
+      supabase.from("chat_posts").update({ upvotes: up, downvotes: down }).eq("id", postId);
+    }
   }
 
-  function addPost() {
+  async function addPost() {
     if (!postText.trim() || !profile) return;
     track("post_created", { course: activeCourse });
+    const text = postText.trim();
+    setPostText("");
+    setMention(null);
+    const { data } = await supabase.from("chat_posts").insert({
+      course: activeCourse,
+      author: profile.displayName,
+      text,
+      upvotes: 0,
+      downvotes: 0,
+    }).select().single();
     const post: Post = {
-      id: Date.now(), author: profile.displayName, text: postText.trim(),
-      upvotes: 0, downvotes: 0, time: "just now", reported: false,
-      voted: null, showReplies: false, replies: [],
+      id: data?.id ?? `local-${Date.now()}`,
+      author: profile.displayName,
+      text,
+      upvotes: 0, downvotes: 0,
+      time: "just now",
+      reported: false, voted: null, showReplies: false, replies: [],
+      isDemo: !data,
     };
     setThreads((prev) =>
       prev.map((t) => t.course === activeCourse ? { ...t, posts: [post, ...t.posts] } : t)
     );
-    setPostText("");
-    setMention(null);
   }
 
-  function addReply(postId: number) {
+  async function addReply(postId: string) {
     if (!replyInputs[postId]?.trim() || !profile) return;
-    const reply: Reply = { id: Date.now(), author: profile.displayName, text: replyInputs[postId].trim(), time: "just now" };
+    const text = replyInputs[postId].trim();
+    const post = threads.flatMap((t) => t.posts).find((p) => p.id === postId);
+    if (!post?.isDemo) {
+      await supabase.from("chat_replies").insert({ post_id: postId, author: profile.displayName, text });
+    }
+    const reply: Reply = { id: `local-${Date.now()}`, author: profile.displayName, text, time: "just now" };
     updatePost(postId, (p) => ({ ...p, replies: [...p.replies, reply], showReplies: true }));
     setReplyInputs((prev) => ({ ...prev, [postId]: "" }));
     setMention(null);
   }
 
-  function replyTo(postId: number, author: string) {
+  function replyTo(postId: string, author: string) {
     updatePost(postId, (p) => ({ ...p, showReplies: true }));
     setReplyInputs((prev) => {
       const existing = prev[postId] ?? "";
@@ -311,20 +428,25 @@ function ChatInner() {
     });
   }
 
-  function toggleReplies(postId: number) {
+  function toggleReplies(postId: string) {
     updatePost(postId, (p) => ({ ...p, showReplies: !p.showReplies }));
   }
 
-  function report(postId: number) {
+  function report(postId: string) {
     updatePost(postId, (p) => ({ ...p, reported: true }));
+    const post = threads.flatMap((t) => t.posts).find((p) => p.id === postId);
+    if (!post?.isDemo) {
+      supabase.from("chat_posts").update({ reported: true }).eq("id", postId);
+    }
   }
 
-  function addThread() {
+  async function addThread() {
     const c = newCourse.trim().toUpperCase();
     if (!c || threads.find((t) => t.course === c)) return;
-    setThreads([...threads, { course: c, posts: [] }]);
-    setActiveCourse(c);
     setNewCourse("");
+    const dbPosts = await loadCoursePostsFromDB(c);
+    setThreads((prev) => [...prev, { course: c, posts: dbPosts }]);
+    setActiveCourse(c);
   }
 
   // -- dm helpers --
@@ -379,12 +501,17 @@ function ChatInner() {
             Course Chat
           </button>
           <button
-            onClick={() => setActiveTab("dm")}
-            className={`px-5 py-3.5 text-sm font-bold border-b-2 transition-all ${
+            onClick={() => { setActiveTab("dm"); setDmUnread(0); }}
+            className={`px-5 py-3.5 text-sm font-bold border-b-2 transition-all flex items-center gap-1.5 ${
               activeTab === "dm" ? "border-[#002A5C] text-[#002A5C]" : "border-transparent text-gray-400 hover:text-gray-700"
             }`}
           >
             Direct Messages
+            {dmUnread > 0 && (
+              <span className="bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none">
+                {dmUnread > 9 ? "9+" : dmUnread}
+              </span>
+            )}
           </button>
         </div>
       </div>
