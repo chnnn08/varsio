@@ -28,6 +28,7 @@ function MessagesInner() {
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "thread">("list");
+  const [lastMessages, setLastMessages] = useState<Record<string, Message | null>>({});
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -52,6 +53,9 @@ function MessagesInner() {
         all = [withParam, ...all];
       }
       setPartners(all);
+      const lasts: Record<string, Message | null> = {};
+      await Promise.all(all.map(async (n) => { lasts[n] = await getLastMessage(p.displayName, n); }));
+      setLastMessages(lasts);
 
       const target = withParam ?? all[0] ?? null;
       if (target) {
@@ -67,10 +71,10 @@ function MessagesInner() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [convo]);
 
-  function openConvo(name: string) {
+  async function openConvo(name: string) {
     if (!profile) return;
     setActive(name);
-    setConvo(getConvo(profile.displayName, name));
+    setConvo(await getConvo(profile.displayName, name));
     setPartners((prev) => {
       const without = prev.filter((n) => n.toLowerCase() !== name.toLowerCase());
       return [name, ...without];
@@ -79,10 +83,15 @@ function MessagesInner() {
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
-  function handleSend() {
+  async function handleSend() {
     if (!input.trim() || !profile || !active) return;
-    sendDM(profile.displayName, active, input.trim());
-    setConvo(getConvo(profile.displayName, active));
+    await sendDM(profile.displayName, active, input.trim());
+    const [convo, last] = await Promise.all([
+      getConvo(profile.displayName, active),
+      getLastMessage(profile.displayName, active),
+    ]);
+    setConvo(convo);
+    setLastMessages((prev) => ({ ...prev, [active]: last }));
     setPartners((prev) => {
       const without = prev.filter((n) => n.toLowerCase() !== active.toLowerCase());
       return [active, ...without];
@@ -160,7 +169,7 @@ function MessagesInner() {
             </div>
           ) : (
             partners.map((name) => {
-              const last = getLastMessage(profile.displayName, name);
+              const last = lastMessages[name] ?? null;
               const isActive = active?.toLowerCase() === name.toLowerCase();
               return (
                 <button

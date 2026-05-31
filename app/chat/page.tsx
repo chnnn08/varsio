@@ -156,6 +156,7 @@ function ChatInner() {
   const [showNewDM, setShowNewDM] = useState(false);
   const [newDMName, setNewDMName] = useState("");
   const [mobileView, setMobileView] = useState<"list" | "thread">("list");
+  const [lastMessages, setLastMessages] = useState<Record<string, DM | null>>({});
   const dmBottomRef = useRef<HTMLDivElement>(null);
   const dmInputRef = useRef<HTMLTextAreaElement>(null);
   const newDMRef = useRef<HTMLInputElement>(null);
@@ -191,6 +192,9 @@ function ChatInner() {
           all = [withParam, ...all];
         }
         setDmPartners(all);
+        const lasts: Record<string, DM | null> = {};
+        await Promise.all(all.map(async (n) => { lasts[n] = await getLastMessage(p.displayName, n); }));
+        setLastMessages(lasts);
         const target = withParam ?? all[0] ?? null;
         if (target) {
           setDmActive(target);
@@ -337,7 +341,12 @@ function ChatInner() {
   async function handleDMSend() {
     if (!dmInput.trim() || !profile || !dmActive) return;
     await sendDM(profile.displayName, dmActive, dmInput.trim());
-    setDmConvo(await getConvo(profile.displayName, dmActive));
+    const [convo, last] = await Promise.all([
+      getConvo(profile.displayName, dmActive),
+      getLastMessage(profile.displayName, dmActive),
+    ]);
+    setDmConvo(convo);
+    setLastMessages((prev) => ({ ...prev, [dmActive]: last }));
     setDmPartners((prev) => {
       const without = prev.filter((n) => n.toLowerCase() !== dmActive.toLowerCase());
       return [dmActive, ...without];
@@ -739,7 +748,7 @@ function ChatInner() {
                 </div>
               ) : (
                 dmPartners.map((name) => {
-                  const last = profile ? getLastMessage(profile.displayName, name) : null;
+                  const last = lastMessages[name] ?? null;
                   const isActive = dmActive?.toLowerCase() === name.toLowerCase();
                   return (
                     <button
