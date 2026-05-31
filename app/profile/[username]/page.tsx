@@ -149,7 +149,7 @@ export default function PublicProfilePage() {
                 {connected ? "Connected" : "+ Connect"}
               </button>
               <button
-                onClick={() => router.push(`/messages?with=${encodeURIComponent(target.displayName)}`)}
+                onClick={() => router.push(`/chat?tab=dm&with=${encodeURIComponent(target.displayName)}`)}
                 className="px-5 bg-[#F0B429] text-[#002A5C] font-bold py-3 rounded-xl text-sm hover:bg-yellow-400 transition-colors"
               >
                 Message

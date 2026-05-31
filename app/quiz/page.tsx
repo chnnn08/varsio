@@ -4,6 +4,31 @@ import { useState, useEffect } from "react";
 import { getProfile, type Profile } from "@/lib/profile";
 import Link from "next/link";
 
+function StudyQuizTabs({ active }: { active: "study" | "quiz" }) {
+  return (
+    <div className="bg-white border-b border-gray-100">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 flex">
+        <Link
+          href="/study"
+          className={`px-5 py-3.5 text-sm font-bold border-b-2 transition-all ${
+            active === "study" ? "border-[#002A5C] text-[#002A5C]" : "border-transparent text-gray-400 hover:text-gray-700"
+          }`}
+        >
+          Study Sessions
+        </Link>
+        <Link
+          href="/quiz"
+          className={`px-5 py-3.5 text-sm font-bold border-b-2 transition-all ${
+            active === "quiz" ? "border-[#002A5C] text-[#002A5C]" : "border-transparent text-gray-400 hover:text-gray-700"
+          }`}
+        >
+          Quiz Bank
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 // -- types ---------------------------------------------------------------------
 type QuizQuestion = {
   question: string;
@@ -607,6 +632,7 @@ export default function QuizPage() {
   // -- home view --------------------------------------------------------------
   return (
     <div className="min-h-screen bg-[#F4F6F9]">
+      <StudyQuizTabs active="quiz" />
       <div className="bg-[#002A5C] text-white py-14 px-6">
         <div className="max-w-4xl mx-auto flex items-end justify-between gap-4">
           <div>
