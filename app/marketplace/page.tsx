@@ -66,8 +66,7 @@ export default function MarketplacePage() {
   const [bookForm, setBookForm] = useState({ title: "", course: "", author: "", edition: "", condition: "Good" as Textbook["condition"], price: "" });
 
   useEffect(() => {
-    const p = getProfile();
-    setProfileName(p?.displayName ?? null);
+    getProfile().then((p) => setProfileName(p?.displayName ?? null));
   }, []);
 
   // Tutor functions

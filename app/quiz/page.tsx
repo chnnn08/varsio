@@ -106,7 +106,7 @@ export default function QuizPage() {
   const [showExp, setShowExp] = useState(false);
 
   useEffect(() => {
-    setProfile(getProfile());
+    getProfile().then(setProfile);
     setMyQuizzes(loadFromStorage());
   }, []);
 

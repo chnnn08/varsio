@@ -147,7 +147,7 @@ export default function StudyPage() {
   const [chatInput, setChatInput] = useState("");
 
   useEffect(() => {
-    setProfile(getProfile());
+    getProfile().then(setProfile);
   }, []);
 
   // -- helpers ----------------------------------------------------------------

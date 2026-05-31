@@ -37,27 +37,30 @@ function MessagesInner() {
   const router = useRouter();
 
   useEffect(() => {
-    const p = getProfile();
-    if (!p) { router.push("/profile"); return; }
-    setProfile(p);
+    async function init() {
+      const p = await getProfile();
+      if (!p) { router.push("/chat?tab=dm"); return; }
+      setProfile(p);
 
-    const saved = getConvoPartners(p.displayName);
-    const withParam = searchParams.get("with");
+      const saved = await getConvoPartners(p.displayName);
+      const withParam = searchParams.get("with");
 
-    let all = [...saved];
-    if (withParam) {
-      const idx = all.findIndex((n) => n.toLowerCase() === withParam.toLowerCase());
-      if (idx >= 0) all.splice(idx, 1);
-      all = [withParam, ...all];
+      let all = [...saved];
+      if (withParam) {
+        const idx = all.findIndex((n) => n.toLowerCase() === withParam.toLowerCase());
+        if (idx >= 0) all.splice(idx, 1);
+        all = [withParam, ...all];
+      }
+      setPartners(all);
+
+      const target = withParam ?? all[0] ?? null;
+      if (target) {
+        setActive(target);
+        setConvo(await getConvo(p.displayName, target));
+        if (withParam) setMobileView("thread");
+      }
     }
-    setPartners(all);
-
-    const target = withParam ?? all[0] ?? null;
-    if (target) {
-      setActive(target);
-      setConvo(getConvo(p.displayName, target));
-      if (withParam) setMobileView("thread");
-    }
+    init();
   }, [searchParams, router]);
 
   useEffect(() => {

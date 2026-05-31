@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { getProfile, type Profile } from "@/lib/profile";
 import { getConvo, sendDM, getConvoPartners, getLastMessage, type Message as DM } from "@/lib/messages";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 type Reply = { id: number; author: string; text: string; time: string };
 type Post = {
@@ -160,44 +161,45 @@ function ChatInner() {
   const newDMRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const p = getProfile();
-    setProfile(p);
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      const p = user ? await getProfile() : null;
+      setProfile(p);
 
-    // handle tab param
-    if (searchParams.get("tab") === "dm") setActiveTab("dm");
+      if (searchParams.get("tab") === "dm") setActiveTab("dm");
 
-    // handle course param
-    const course = searchParams.get("course");
-    if (course) {
-      const found = INITIAL_THREADS.find((t) => t.course === course.toUpperCase());
-      if (found) setActiveCourse(found.course);
-      else {
-        setThreads((prev) => {
-          if (prev.find((t) => t.course === course.toUpperCase())) return prev;
-          return [...prev, { course: course.toUpperCase(), posts: [] }];
-        });
-        setActiveCourse(course.toUpperCase());
+      const course = searchParams.get("course");
+      if (course) {
+        const found = INITIAL_THREADS.find((t) => t.course === course.toUpperCase());
+        if (found) setActiveCourse(found.course);
+        else {
+          setThreads((prev) => {
+            if (prev.find((t) => t.course === course.toUpperCase())) return prev;
+            return [...prev, { course: course.toUpperCase(), posts: [] }];
+          });
+          setActiveCourse(course.toUpperCase());
+        }
+      }
+
+      if (p) {
+        const saved = await getConvoPartners(p.displayName);
+        const withParam = searchParams.get("with");
+        let all = [...saved];
+        if (withParam) {
+          const idx = all.findIndex((n) => n.toLowerCase() === withParam.toLowerCase());
+          if (idx >= 0) all.splice(idx, 1);
+          all = [withParam, ...all];
+        }
+        setDmPartners(all);
+        const target = withParam ?? all[0] ?? null;
+        if (target) {
+          setDmActive(target);
+          setDmConvo(await getConvo(p.displayName, target));
+          if (withParam) setMobileView("thread");
+        }
       }
     }
-
-    // initialize DM partners
-    if (p) {
-      const saved = getConvoPartners(p.displayName);
-      const withParam = searchParams.get("with");
-      let all = [...saved];
-      if (withParam) {
-        const idx = all.findIndex((n) => n.toLowerCase() === withParam.toLowerCase());
-        if (idx >= 0) all.splice(idx, 1);
-        all = [withParam, ...all];
-      }
-      setDmPartners(all);
-      const target = withParam ?? all[0] ?? null;
-      if (target) {
-        setDmActive(target);
-        setDmConvo(getConvo(p.displayName, target));
-        if (withParam) setMobileView("thread");
-      }
-    }
+    init();
   }, [searchParams]);
 
   useEffect(() => {
@@ -320,10 +322,10 @@ function ChatInner() {
   }
 
   // -- dm helpers --
-  function openDMConvo(name: string) {
+  async function openDMConvo(name: string) {
     if (!profile) return;
     setDmActive(name);
-    setDmConvo(getConvo(profile.displayName, name));
+    setDmConvo(await getConvo(profile.displayName, name));
     setDmPartners((prev) => {
       const without = prev.filter((n) => n.toLowerCase() !== name.toLowerCase());
       return [name, ...without];
@@ -332,10 +334,10 @@ function ChatInner() {
     setTimeout(() => dmInputRef.current?.focus(), 50);
   }
 
-  function handleDMSend() {
+  async function handleDMSend() {
     if (!dmInput.trim() || !profile || !dmActive) return;
-    sendDM(profile.displayName, dmActive, dmInput.trim());
-    setDmConvo(getConvo(profile.displayName, dmActive));
+    await sendDM(profile.displayName, dmActive, dmInput.trim());
+    setDmConvo(await getConvo(profile.displayName, dmActive));
     setDmPartners((prev) => {
       const without = prev.filter((n) => n.toLowerCase() !== dmActive.toLowerCase());
       return [dmActive, ...without];
@@ -343,12 +345,12 @@ function ChatInner() {
     setDmInput("");
   }
 
-  function startNewDM() {
+  async function startNewDM() {
     const name = newDMName.trim();
     if (!name || name.toLowerCase() === profile?.displayName.toLowerCase()) return;
     setNewDMName("");
     setShowNewDM(false);
-    openDMConvo(name);
+    await openDMConvo(name);
   }
 
   return (

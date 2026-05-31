@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, type CSSProperties, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getProfile, saveProfile, clearProfile, registerPublicProfile, type Profile } from "@/lib/profile";
+import { getProfile, saveProfile, clearProfile, type Profile } from "@/lib/profile";
+import { supabase } from "@/lib/supabase";
 
 const YEARS = ["1st Year", "2nd Year", "3rd Year", "4th Year", "5th Year", "Graduate", "Alumni"];
 
@@ -118,23 +119,27 @@ export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const p = getProfile();
-    if (p) {
-      setProfile(p);
-      setForm({
-        displayName: p.displayName,
-        year: p.year,
-        programs: p.programs ?? [],
-        bio: p.bio,
-        avatar: p.avatar ?? "#002A5C",
-        avatarImage: p.avatarImage,
-        coverColor: p.coverColor ?? "#002A5C",
-      });
-      registerPublicProfile(p);
-    } else {
-      setEditing(true);
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push("/login"); return; }
+      const p = await getProfile();
+      if (p) {
+        setProfile(p);
+        setForm({
+          displayName: p.displayName,
+          year: p.year,
+          programs: p.programs ?? [],
+          bio: p.bio,
+          avatar: p.avatar ?? "#002A5C",
+          avatarImage: p.avatarImage,
+          coverColor: p.coverColor ?? "#002A5C",
+        });
+      } else {
+        setEditing(true);
+      }
     }
-  }, []);
+    init();
+  }, [router]);
 
   function handlePhotoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -166,11 +171,12 @@ export default function ProfilePage() {
     }));
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.displayName.trim()) return;
     const isNew = !profile;
+    const { data: { user } } = await supabase.auth.getUser();
     const p: Profile = {
-      id: profile?.id ?? crypto.randomUUID(),
+      id: user?.id ?? profile?.id ?? "",
       displayName: form.displayName.trim(),
       year: form.year,
       programs: form.programs,
@@ -180,7 +186,7 @@ export default function ProfilePage() {
       coverColor: form.coverColor,
       connections: profile?.connections ?? [],
     };
-    saveProfile(p);
+    await saveProfile(p);
     setProfile(p);
     setEditing(false);
     if (isNew) {
@@ -191,29 +197,29 @@ export default function ProfilePage() {
     }
   }
 
-  function handleDelete() {
-    clearProfile();
+  async function handleDelete() {
+    await clearProfile();
     setProfile(null);
     setForm({ displayName: "", year: "", programs: [], bio: "", avatar: "#002A5C", avatarImage: undefined, coverColor: "#002A5C" });
     setEditing(true);
   }
 
-  function addConnection() {
+  async function addConnection() {
     const name = connInput.trim();
     if (!name || !profile) return;
     if (name.toLowerCase() === profile.displayName.toLowerCase()) { setConnError("That's you."); return; }
     if (profile.connections.includes(name)) { setConnError("Already connected."); return; }
     const updated: Profile = { ...profile, connections: [...profile.connections, name] };
-    saveProfile(updated);
+    await saveProfile(updated);
     setProfile(updated);
     setConnInput("");
     setConnError("");
   }
 
-  function removeConnection(name: string) {
+  async function removeConnection(name: string) {
     if (!profile) return;
     const updated: Profile = { ...profile, connections: profile.connections.filter((c) => c !== name) };
-    saveProfile(updated);
+    await saveProfile(updated);
     setProfile(updated);
   }
 

@@ -1,69 +1,78 @@
+import { supabase } from "./supabase";
+
 export type Profile = {
   id: string;
   displayName: string;
   year: string;
   programs: string[];
   bio: string;
-  avatar: string;         // fallback color when no photo
-  avatarImage?: string;   // base64 data URL of uploaded photo
-  coverColor: string;     // profile banner background
+  avatar: string;
+  avatarImage?: string;
+  coverColor: string;
   connections: string[];
 };
 
-const KEY = "arbor_profile";
-const PUBLIC_KEY = "varsio_public_profiles";
-
-export function getProfile(): Profile | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw) as Profile;
-    if (!p.avatar) p.avatar = "#002A5C";
-    if (!p.coverColor) p.coverColor = "#002A5C";
-    if (!p.connections) p.connections = [];
-    return p;
-  } catch {
-    return null;
-  }
+function rowToProfile(row: Record<string, unknown>): Profile {
+  return {
+    id: row.id as string,
+    displayName: row.display_name as string,
+    year: (row.year as string) ?? "",
+    programs: (row.programs as string[]) ?? [],
+    bio: (row.bio as string) ?? "",
+    avatar: (row.avatar as string) ?? "#002A5C",
+    avatarImage: (row.avatar_image as string) ?? undefined,
+    coverColor: (row.cover_color as string) ?? "#002A5C",
+    connections: (row.connections as string[]) ?? [],
+  };
 }
 
-export function saveProfile(p: Profile): void {
-  localStorage.setItem(KEY, JSON.stringify(p));
-  registerPublicProfile(p);
+export async function getProfile(): Promise<Profile | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+  if (error || !data) return null;
+  return rowToProfile(data);
 }
 
-export function clearProfile(): void {
-  localStorage.removeItem(KEY);
+export async function saveProfile(p: Profile): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("profiles").upsert({
+    id: user.id,
+    display_name: p.displayName,
+    year: p.year,
+    programs: p.programs,
+    bio: p.bio,
+    avatar: p.avatar,
+    avatar_image: p.avatarImage ?? null,
+    cover_color: p.coverColor,
+    connections: p.connections,
+    updated_at: new Date().toISOString(),
+  });
 }
 
-export function registerPublicProfile(p: Profile): void {
-  if (typeof window === "undefined") return;
-  try {
-    const raw = localStorage.getItem(PUBLIC_KEY) ?? "{}";
-    const store = JSON.parse(raw) as Record<string, Profile>;
-    store[p.displayName.toLowerCase()] = p;
-    localStorage.setItem(PUBLIC_KEY, JSON.stringify(store));
-  } catch {}
+export async function clearProfile(): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("profiles").delete().eq("id", user.id);
 }
 
-export function getPublicProfile(username: string): Profile | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(PUBLIC_KEY) ?? "{}";
-    const store = JSON.parse(raw) as Record<string, Profile>;
-    return store[username.toLowerCase()] ?? null;
-  } catch {
-    return null;
-  }
+export async function getPublicProfile(username: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .ilike("display_name", username)
+    .single();
+  if (error || !data) return null;
+  return rowToProfile(data);
 }
 
-export function getAllPublicProfiles(): Profile[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(PUBLIC_KEY) ?? "{}";
-    return Object.values(JSON.parse(raw) as Record<string, Profile>);
-  } catch {
-    return [];
-  }
+export async function getAllPublicProfiles(): Promise<Profile[]> {
+  const { data, error } = await supabase.from("profiles").select("*");
+  if (error || !data) return [];
+  return data.map(rowToProfile);
 }

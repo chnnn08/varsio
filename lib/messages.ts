@@ -1,3 +1,5 @@
+import { supabase } from "./supabase";
+
 export type Message = {
   id: string;
   from: string;
@@ -6,56 +8,61 @@ export type Message = {
   ts: number;
 };
 
-const KEY = "varsio_dms";
-
-function load(): Message[] {
-  if (typeof window === "undefined") return [];
-  try { return JSON.parse(localStorage.getItem(KEY) ?? "[]"); }
-  catch { return []; }
+function rowToMessage(row: Record<string, unknown>): Message {
+  return {
+    id: row.id as string,
+    from: row.from_user as string,
+    to: row.to_user as string,
+    text: row.text as string,
+    ts: new Date(row.created_at as string).getTime(),
+  };
 }
 
-function save(msgs: Message[]): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(KEY, JSON.stringify(msgs));
-}
-
-export function getConvo(a: string, b: string): Message[] {
+export async function getConvo(a: string, b: string): Promise<Message[]> {
   const aL = a.toLowerCase();
   const bL = b.toLowerCase();
-  return load()
-    .filter(
-      (m) =>
-        (m.from.toLowerCase() === aL && m.to.toLowerCase() === bL) ||
-        (m.from.toLowerCase() === bL && m.to.toLowerCase() === aL)
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .or(
+      `and(from_user.ilike.${aL},to_user.ilike.${bL}),and(from_user.ilike.${bL},to_user.ilike.${aL})`
     )
-    .sort((x, y) => x.ts - y.ts);
+    .order("created_at", { ascending: true });
+  if (error || !data) return [];
+  return data.map(rowToMessage);
 }
 
-export function sendDM(from: string, to: string, text: string): void {
-  const msgs = load();
-  msgs.push({ id: crypto.randomUUID(), from, to, text: text.trim(), ts: Date.now() });
-  save(msgs);
+export async function sendDM(from: string, to: string, text: string): Promise<void> {
+  await supabase.from("messages").insert({
+    from_user: from,
+    to_user: to,
+    text: text.trim(),
+  });
 }
 
-export function getLastMessage(myName: string, other: string): Message | null {
-  const msgs = getConvo(myName, other);
+export async function getLastMessage(myName: string, other: string): Promise<Message | null> {
+  const msgs = await getConvo(myName, other);
   return msgs[msgs.length - 1] ?? null;
 }
 
-export function getConvoPartners(myName: string): string[] {
+export async function getConvoPartners(myName: string): Promise<string[]> {
   const myL = myName.toLowerCase();
+  const { data, error } = await supabase
+    .from("messages")
+    .select("from_user, to_user, created_at")
+    .or(`from_user.ilike.${myL},to_user.ilike.${myL}`)
+    .order("created_at", { ascending: false });
+  if (error || !data) return [];
+
   const seen = new Map<string, { name: string; ts: number }>();
-  for (const m of load()) {
-    if (m.from.toLowerCase() === myL) {
-      const key = m.to.toLowerCase();
-      const cur = seen.get(key);
-      if (!cur || m.ts > cur.ts) seen.set(key, { name: m.to, ts: m.ts });
-    }
-    if (m.to.toLowerCase() === myL) {
-      const key = m.from.toLowerCase();
-      const cur = seen.get(key);
-      if (!cur || m.ts > cur.ts) seen.set(key, { name: m.from, ts: m.ts });
+  for (const row of data) {
+    const other = (row.from_user as string).toLowerCase() === myL
+      ? row.to_user as string
+      : row.from_user as string;
+    const key = other.toLowerCase();
+    if (!seen.has(key)) {
+      seen.set(key, { name: other, ts: new Date(row.created_at as string).getTime() });
     }
   }
-  return [...seen.values()].sort((a, b) => b.ts - a.ts).map(({ name }) => name);
+  return [...seen.values()].sort((a, b) => b.ts - a.ts).map((v) => v.name);
 }

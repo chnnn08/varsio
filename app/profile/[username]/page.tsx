@@ -44,23 +44,26 @@ export default function PublicProfilePage() {
   const decoded = decodeURIComponent(username ?? "");
 
   useEffect(() => {
-    const myProfile = getProfile();
-    setMe(myProfile);
+    async function init() {
+      const myProfile = await getProfile();
+      setMe(myProfile);
 
-    if (myProfile && myProfile.displayName.toLowerCase() === decoded.toLowerCase()) {
-      router.replace("/profile");
-      return;
+      if (myProfile && myProfile.displayName.toLowerCase() === decoded.toLowerCase()) {
+        router.replace("/profile");
+        return;
+      }
+
+      const found = await getPublicProfile(decoded);
+      setTarget(found);
+
+      if (myProfile && found) {
+        setConnected(myProfile.connections.includes(found.displayName));
+      }
     }
-
-    const found = getPublicProfile(decoded);
-    setTarget(found);
-
-    if (myProfile && found) {
-      setConnected(myProfile.connections.includes(found.displayName));
-    }
+    init();
   }, [decoded, router]);
 
-  function toggleConnect() {
+  async function toggleConnect() {
     if (!me || !target || target === "loading") return;
     const isConnected = me.connections.includes(target.displayName);
     const updated: Profile = {
@@ -69,7 +72,7 @@ export default function PublicProfilePage() {
         ? me.connections.filter((c) => c !== target.displayName)
         : [...me.connections, target.displayName],
     };
-    saveProfile(updated);
+    await saveProfile(updated);
     setMe(updated);
     setConnected(!isConnected);
   }
