@@ -118,7 +118,12 @@ export default function PublicProfilePage() {
       {/* Cover banner */}
       <div
         className="h-48"
-        style={{ backgroundColor: target.coverColor ?? "#002A5C" }}
+        style={{
+          backgroundColor: target.coverColor ?? "#002A5C",
+          backgroundImage: target.coverImage ? `url(${target.coverImage})` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
       />
 
       <div className="max-w-lg mx-auto px-6 pb-16">

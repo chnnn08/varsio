@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   avatar text default '#002A5C',
   avatar_image text,
   cover_color text default '#002A5C',
+  cover_image text,
   connections text[] default '{}',
   created_at timestamptz default now(),
   updated_at timestamptz default now()

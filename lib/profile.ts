@@ -9,6 +9,7 @@ export type Profile = {
   avatar: string;
   avatarImage?: string;
   coverColor: string;
+  coverImage?: string;
   connections: string[];
 };
 
@@ -22,6 +23,7 @@ function rowToProfile(row: Record<string, unknown>): Profile {
     avatar: (row.avatar as string) ?? "#002A5C",
     avatarImage: (row.avatar_image as string) ?? undefined,
     coverColor: (row.cover_color as string) ?? "#002A5C",
+    coverImage: (row.cover_image as string) ?? undefined,
     connections: (row.connections as string[]) ?? [],
   };
 }
@@ -50,6 +52,7 @@ export async function saveProfile(p: Profile): Promise<void> {
     avatar: p.avatar,
     avatar_image: p.avatarImage ?? null,
     cover_color: p.coverColor,
+    cover_image: p.coverImage ?? null,
     connections: p.connections,
     updated_at: new Date().toISOString(),
   });
