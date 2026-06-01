@@ -314,7 +314,7 @@ function ChatInner() {
   const filtered = threads.filter((t) => t.course.includes(search.toUpperCase()));
   const visiblePosts = (activeThread?.posts ?? [])
     .filter((p) => !p.reported)
-    .sort((a, b) => sort === "top" ? (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes) : b.id - a.id);
+    .sort((a, b) => sort === "top" ? (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes) : b.id.localeCompare(a.id));
 
   function getSuggestions(query: string): string[] {
     const friends = profile?.connections ?? [];
