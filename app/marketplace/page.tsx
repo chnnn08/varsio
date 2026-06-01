@@ -1,38 +1,26 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
-import { getProfile } from "@/lib/profile";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getProfile, type Profile } from "@/lib/profile";
+import { supabase } from "@/lib/supabase";
 
-// -- types ---------------------------------------------------------------------
 type Tutor = {
-  id: string; name: string; course: string; subjects: string[];
-  rate: number; bio: string; rating: number; sessions: number; available: boolean;
+  id: string; display_name: string; subjects: string[];
+  rate: number; bio: string; available: boolean; created_at: string;
 };
 
 type Textbook = {
   id: string; title: string; course: string; author: string;
   edition: string; condition: "New" | "Like New" | "Good" | "Fair";
-  price: number; seller: string; posted: string;
+  price: number; seller_name: string; sold: boolean; created_at: string;
 };
 
 type Tab = "tutoring" | "textbooks";
 
-// -- mock data ------------------------------------------------------------------
-const INITIAL_TUTORS: Tutor[] = [
-  { id: "t1", name: "Alex K.", course: "CSC", subjects: ["CSC108H1", "CSC148H1", "CSC207H1"], rate: 25, bio: "4th year CS student. Helped 30+ students pass their first CS courses.", rating: 4.9, sessions: 47, available: true },
-  { id: "t2", name: "Maya T.", course: "MAT", subjects: ["MAT137Y1", "MAT237Y1", "MAT224H1"], rate: 30, bio: "Math specialist. Patient with proofs and calculus. Available evenings.", rating: 4.8, sessions: 32, available: true },
-  { id: "t3", name: "James W.", course: "ECO", subjects: ["ECO101H1", "ECO102H1", "ECO200Y1"], rate: 20, bio: "Economics + Stats double major. Great at visualizing concepts.", rating: 4.7, sessions: 18, available: false },
-  { id: "t4", name: "Priya S.", course: "CHM", subjects: ["CHM135H1", "CHM136H1", "BCH210H1"], rate: 28, bio: "Biochem grad student. Tutored undergrads for 3 years.", rating: 5.0, sessions: 61, available: true },
-];
-
-const INITIAL_TEXTBOOKS: Textbook[] = [
-  { id: "b1", title: "Introduction to the Theory of Computation", course: "CSC236H1", author: "Sipser", edition: "3rd", condition: "Good", price: 45, seller: "alex_cs", posted: "2d ago" },
-  { id: "b2", title: "Calculus: Early Transcendentals", course: "MAT137Y1", author: "Stewart", edition: "8th", condition: "Like New", price: 60, seller: "james_w", posted: "1d ago" },
-  { id: "b3", title: "Organic Chemistry", course: "CHM151Y1", author: "Clayden", edition: "2nd", condition: "Fair", price: 30, seller: "priya_s", posted: "3d ago" },
-];
-
 const CONDITIONS = ["New", "Like New", "Good", "Fair"] as const;
+
 const CONDITION_COLORS: Record<string, string> = {
   "New": "bg-green-50 text-green-700",
   "Like New": "bg-[#1a8c4e]/10 text-[#1a8c4e]",
@@ -41,64 +29,114 @@ const CONDITION_COLORS: Record<string, string> = {
 };
 
 function Stars({ n }: { n: number }) {
-  return (
-    <span className="text-[#F0B429]">
-      {"★".repeat(Math.floor(n))}{"☆".repeat(5 - Math.floor(n))}
-    </span>
-  );
+  const full = Math.min(5, Math.max(0, Math.floor(n)));
+  return <span className="text-[#F0B429]">{"★".repeat(full)}{"☆".repeat(5 - full)}</span>;
 }
 
-// -- component ------------------------------------------------------------------
+function fmtTime(iso: string) {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 export default function MarketplacePage() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("tutoring");
-  const [profileName, setProfileName] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Tutoring
-  const [tutors, setTutors] = useState<Tutor[]>(INITIAL_TUTORS);
+  const [tutors, setTutors] = useState<Tutor[]>([]);
   const [tutorSearch, setTutorSearch] = useState("");
   const [showTutorForm, setShowTutorForm] = useState(false);
   const [tutorForm, setTutorForm] = useState({ subjects: "", rate: "", bio: "" });
+  const [submittingTutor, setSubmittingTutor] = useState(false);
 
   // Textbooks
-  const [textbooks, setTextbooks] = useState<Textbook[]>(INITIAL_TEXTBOOKS);
+  const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [bookSearch, setBookSearch] = useState("");
   const [showBookForm, setShowBookForm] = useState(false);
-  const [bookForm, setBookForm] = useState({ title: "", course: "", author: "", edition: "", condition: "Good" as Textbook["condition"], price: "" });
+  const [bookForm, setBookForm] = useState({
+    title: "", course: "", author: "", edition: "",
+    condition: "Good" as Textbook["condition"], price: "",
+  });
+  const [submittingBook, setSubmittingBook] = useState(false);
 
   useEffect(() => {
-    getProfile().then((p) => setProfileName(p?.displayName ?? null));
+    async function init() {
+      const p = await getProfile();
+      setProfile(p);
+      await Promise.all([loadTutors(), loadTextbooks()]);
+      setLoading(false);
+    }
+    init();
   }, []);
 
-  // Tutor functions
-  function listAsTutor() {
-    if (!profileName || !tutorForm.subjects.trim() || !tutorForm.rate) return;
-    const subjects = tutorForm.subjects.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
-    const newTutor: Tutor = {
-      id: crypto.randomUUID(), name: profileName,
-      course: subjects[0]?.substring(0, 3) ?? "GEN",
-      subjects, rate: parseFloat(tutorForm.rate), bio: tutorForm.bio.trim(),
-      rating: 0, sessions: 0, available: true,
-    };
-    setTutors((prev) => [newTutor, ...prev]);
-    setTutorForm({ subjects: "", rate: "", bio: "" });
-    setShowTutorForm(false);
+  async function loadTutors() {
+    const { data } = await supabase.from("tutors")
+      .select("*").order("created_at", { ascending: false });
+    if (data) setTutors(data as Tutor[]);
   }
 
-  // Textbook functions
-  function listTextbook() {
-    if (!profileName || !bookForm.title.trim() || !bookForm.price) return;
-    const newBook: Textbook = {
-      id: crypto.randomUUID(), ...bookForm,
-      price: parseFloat(bookForm.price), seller: profileName, posted: "just now",
-    };
-    setTextbooks((prev) => [newBook, ...prev]);
+  async function loadTextbooks() {
+    const { data } = await supabase.from("textbooks")
+      .select("*").eq("sold", false).order("created_at", { ascending: false });
+    if (data) setTextbooks(data as Textbook[]);
+  }
+
+  async function listAsTutor() {
+    if (!profile || !tutorForm.subjects.trim() || !tutorForm.rate) return;
+    setSubmittingTutor(true);
+    const subjects = tutorForm.subjects.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
+    await supabase.from("tutors").insert({
+      display_name: profile.displayName,
+      subjects,
+      rate: parseFloat(tutorForm.rate),
+      bio: tutorForm.bio.trim(),
+      available: true,
+    });
+    setTutorForm({ subjects: "", rate: "", bio: "" });
+    setShowTutorForm(false);
+    await loadTutors();
+    setSubmittingTutor(false);
+  }
+
+  async function toggleAvailability(tutor: Tutor) {
+    if (tutor.display_name.toLowerCase() !== profile?.displayName.toLowerCase()) return;
+    await supabase.from("tutors").update({ available: !tutor.available }).eq("id", tutor.id);
+    setTutors((prev) => prev.map((t) => t.id === tutor.id ? { ...t, available: !t.available } : t));
+  }
+
+  async function listTextbook() {
+    if (!profile || !bookForm.title.trim() || !bookForm.price) return;
+    setSubmittingBook(true);
+    await supabase.from("textbooks").insert({
+      title: bookForm.title.trim(),
+      course: bookForm.course.trim().toUpperCase(),
+      author: bookForm.author.trim(),
+      edition: bookForm.edition.trim(),
+      condition: bookForm.condition,
+      price: parseFloat(bookForm.price),
+      seller_name: profile.displayName,
+      sold: false,
+    });
     setBookForm({ title: "", course: "", author: "", edition: "", condition: "Good", price: "" });
     setShowBookForm(false);
+    await loadTextbooks();
+    setSubmittingBook(false);
+  }
+
+  async function markSold(id: string) {
+    await supabase.from("textbooks").update({ sold: true }).eq("id", id);
+    setTextbooks((prev) => prev.filter((b) => b.id !== id));
   }
 
   const filteredTutors = tutors.filter((t) =>
-    !tutorSearch || t.subjects.some((s) => s.toLowerCase().includes(tutorSearch.toLowerCase())) ||
-    t.name.toLowerCase().includes(tutorSearch.toLowerCase())
+    !tutorSearch ||
+    t.subjects.some((s) => s.toLowerCase().includes(tutorSearch.toLowerCase())) ||
+    t.display_name.toLowerCase().includes(tutorSearch.toLowerCase())
   );
 
   const filteredBooks = textbooks.filter((b) =>
@@ -118,11 +156,13 @@ export default function MarketplacePage() {
             <p className="text-white/50 text-sm">Find tutors, buy and sell textbooks within the UofT community.</p>
           </div>
           {tab === "tutoring" ? (
-            <button onClick={() => setShowTutorForm(!showTutorForm)} className="shrink-0 bg-[#F0B429] text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-yellow-400 transition-colors">
+            <button onClick={() => { if (!profile) { router.push("/profile"); return; } setShowTutorForm(!showTutorForm); }}
+              className="shrink-0 bg-[#F0B429] text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-yellow-400 transition-colors">
               Become a Tutor
             </button>
           ) : (
-            <button onClick={() => setShowBookForm(!showBookForm)} className="shrink-0 bg-[#F0B429] text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-yellow-400 transition-colors">
+            <button onClick={() => { if (!profile) { router.push("/profile"); return; } setShowBookForm(!showBookForm); }}
+              className="shrink-0 bg-[#F0B429] text-black font-bold px-6 py-3 rounded-xl text-sm hover:bg-yellow-400 transition-colors">
               List a Textbook
             </button>
           )}
@@ -133,101 +173,145 @@ export default function MarketplacePage() {
         {/* Tabs */}
         <div className="flex gap-1 mb-8 bg-white border border-gray-100 rounded-2xl p-1.5 w-fit">
           {([["tutoring", "Tutoring"], ["textbooks", "Textbooks"]] as [Tab, string][]).map(([t, label]) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
+            <button key={t} onClick={() => setTab(t)}
               className={`px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                 tab === t ? "bg-[#002A5C] text-white shadow-sm" : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
+              }`}>
               {label}
             </button>
           ))}
         </div>
 
-        {/* -- TUTORING -- */}
+        {/* ── TUTORING ──────────────────────────────────────────── */}
         {tab === "tutoring" && (
           <div className="space-y-4">
             {/* Become a tutor form */}
             {showTutorForm && (
               <div className="bg-white border border-gray-100 rounded-2xl p-6">
                 <h2 className="font-black text-black mb-1">Become a Tutor</h2>
-                <p className="text-xs text-gray-400 mb-4">
-                  {profileName ? `Listing as ${profileName}` : <span>You need a <Link href="/profile" className="text-[#002A5C] font-semibold">profile</Link> to list as a tutor.</span>}
-                </p>
+                <p className="text-xs text-gray-400 mb-4">Listing as <span className="font-semibold">{profile?.displayName}</span></p>
                 <div className="space-y-3">
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Courses You Tutor</label>
-                    <input value={tutorForm.subjects} onChange={(e) => setTutorForm({ ...tutorForm, subjects: e.target.value })} placeholder="e.g. CSC108H1, CSC148H1, MAT137Y1" className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
+                    <input value={tutorForm.subjects} onChange={(e) => setTutorForm({ ...tutorForm, subjects: e.target.value })}
+                      placeholder="e.g. CSC108H1, CSC148H1, MAT137Y1"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                    />
                     <p className="text-xs text-gray-400 mt-1">Separate with commas</p>
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Hourly Rate (CAD)</label>
-                    <input type="number" value={tutorForm.rate} onChange={(e) => setTutorForm({ ...tutorForm, rate: e.target.value })} placeholder="e.g. 25" className="w-32 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
+                    <input type="number" value={tutorForm.rate} onChange={(e) => setTutorForm({ ...tutorForm, rate: e.target.value })}
+                      placeholder="e.g. 25" min="1"
+                      className="w-32 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-1.5">Bio</label>
-                    <textarea value={tutorForm.bio} onChange={(e) => setTutorForm({ ...tutorForm, bio: e.target.value })} placeholder="Tell students about your background and teaching style..." rows={3} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
+                    <textarea value={tutorForm.bio} onChange={(e) => setTutorForm({ ...tutorForm, bio: e.target.value })}
+                      placeholder="Tell students about your background and teaching style..."
+                      rows={3}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                    />
                   </div>
-                  <button onClick={listAsTutor} disabled={!profileName} className="w-full bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40">
-                    List as Tutor →
-                  </button>
+                  <div className="flex gap-3">
+                    <button onClick={listAsTutor} disabled={submittingTutor || !tutorForm.subjects.trim() || !tutorForm.rate}
+                      className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40">
+                      {submittingTutor ? "Listing..." : "List as Tutor →"}
+                    </button>
+                    <button onClick={() => setShowTutorForm(false)}
+                      className="px-5 border border-gray-200 text-gray-500 font-semibold py-3 rounded-xl text-sm hover:border-gray-400 transition-colors">
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Varsio Pro note */}
-            <div className="bg-[#F0B429]/10 border border-[#F0B429]/30 rounded-2xl px-5 py-3 flex items-center justify-between">
-              <p className="text-sm font-semibold text-yellow-800">Varsio Pro tutors get priority placement and profile badges</p>
-              <Link href="/#pricing" className="text-xs font-bold text-yellow-800 hover:text-black transition-colors">Upgrade →</Link>
-            </div>
+            {/* No profile prompt */}
+            {!profile && (
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 flex items-center justify-between gap-4">
+                <p className="text-sm text-gray-500">Create a profile to list yourself as a tutor.</p>
+                <Link href="/profile" className="text-xs font-bold text-[#002A5C] border border-[#002A5C]/20 px-4 py-2 rounded-xl hover:bg-[#002A5C] hover:text-white transition-all shrink-0">
+                  Create Profile
+                </Link>
+              </div>
+            )}
 
             {/* Search */}
-            <input
-              value={tutorSearch}
-              onChange={(e) => setTutorSearch(e.target.value)}
+            <input value={tutorSearch} onChange={(e) => setTutorSearch(e.target.value)}
               placeholder="Search by course or name (e.g. CSC108H1)..."
               className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
             />
 
             {/* Tutor cards */}
-            <div className="grid sm:grid-cols-2 gap-4">
-              {filteredTutors.map((t) => (
-                <div key={t.id} className="bg-white border border-gray-100 rounded-2xl p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-[#002A5C] text-white font-black flex items-center justify-center text-sm shrink-0">
-                        {t.name.split(" ").map((n) => n[0]).join("")}
-                      </div>
-                      <div>
-                        <p className="font-bold text-black text-sm">{t.name}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Stars n={t.rating} />
-                          <span className="text-xs text-gray-400">{t.rating > 0 ? `${t.rating} · ${t.sessions} sessions` : "New tutor"}</span>
+            {loading ? (
+              <div className="text-center py-12"><div className="w-6 h-6 border-2 border-[#002A5C]/20 border-t-[#002A5C] rounded-full animate-spin mx-auto" /></div>
+            ) : filteredTutors.length === 0 ? (
+              <div className="bg-white border border-gray-100 rounded-2xl text-center py-16 text-gray-300">
+                <p className="text-sm font-semibold">No tutors yet — be the first to list</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {filteredTutors.map((t) => {
+                  const isMe = t.display_name.toLowerCase() === profile?.displayName.toLowerCase();
+                  return (
+                    <div key={t.id} className="bg-white border border-gray-100 rounded-2xl p-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <Link href={`/profile/${encodeURIComponent(t.display_name)}`}
+                            className="w-11 h-11 rounded-xl bg-[#002A5C] text-white font-black flex items-center justify-center text-sm shrink-0 hover:opacity-80 transition-opacity">
+                            {t.display_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                          </Link>
+                          <div>
+                            <Link href={`/profile/${encodeURIComponent(t.display_name)}`}
+                              className="font-bold text-black text-sm hover:text-[#002A5C] transition-colors">
+                              {t.display_name}
+                            </Link>
+                            <p className="text-xs text-gray-400 mt-0.5">{fmtTime(t.created_at)}</p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-black text-[#002A5C] text-lg">${t.rate}</p>
+                          <p className="text-xs text-gray-400">/hr</p>
                         </div>
                       </div>
+                      {t.bio && <p className="text-xs text-gray-500 leading-relaxed mb-3">{t.bio}</p>}
+                      <div className="flex flex-wrap gap-1.5 mb-4">
+                        {t.subjects.map((s) => (
+                          <span key={s} className="bg-[#002A5C]/8 text-[#002A5C] text-xs font-bold px-2.5 py-1 rounded-lg font-mono">{s}</span>
+                        ))}
+                      </div>
+                      {isMe ? (
+                        <button onClick={() => toggleAvailability(t)}
+                          className={`w-full py-2.5 rounded-xl text-sm font-bold transition-colors ${
+                            t.available ? "bg-gray-100 text-gray-600 hover:bg-gray-200" : "bg-[#1a8c4e] text-white hover:bg-green-700"
+                          }`}>
+                          {t.available ? "Mark Unavailable" : "Mark Available"}
+                        </button>
+                      ) : t.available && profile ? (
+                        <button onClick={() => router.push(`/chat?tab=dm&with=${encodeURIComponent(t.display_name)}`)}
+                          className="w-full py-2.5 rounded-xl text-sm font-bold bg-[#1a8c4e] text-white hover:bg-green-700 transition-colors">
+                          Book Session
+                        </button>
+                      ) : !profile ? (
+                        <Link href="/profile" className="block w-full py-2.5 rounded-xl text-sm font-bold text-center bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors">
+                          Sign in to book
+                        </Link>
+                      ) : (
+                        <div className="w-full py-2.5 rounded-xl text-sm font-bold bg-gray-100 text-gray-400 text-center">
+                          Unavailable
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-black text-[#002A5C] text-lg">${t.rate}</p>
-                      <p className="text-xs text-gray-400">/hr</p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 leading-relaxed mb-3">{t.bio}</p>
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {t.subjects.map((s) => (
-                      <span key={s} className="bg-[#002A5C]/8 text-[#002A5C] text-xs font-bold px-2.5 py-1 rounded-lg font-mono">{s}</span>
-                    ))}
-                  </div>
-                  <button className={`w-full py-2.5 rounded-xl text-sm font-bold transition-colors ${t.available ? "bg-[#1a8c4e] text-white hover:bg-green-700" : "bg-gray-100 text-gray-400 cursor-not-allowed"}`}>
-                    {t.available ? "Book Session" : "Unavailable"}
-                  </button>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* -- TEXTBOOKS -- */}
+        {/* ── TEXTBOOKS ─────────────────────────────────────────── */}
         {tab === "textbooks" && (
           <div className="space-y-4">
             {/* List form */}
@@ -235,59 +319,126 @@ export default function MarketplacePage() {
               <div className="bg-white border border-gray-100 rounded-2xl p-6">
                 <h2 className="font-black text-black mb-4">List a Textbook</h2>
                 <div className="grid grid-cols-2 gap-3 mb-3">
-                  <input value={bookForm.title} onChange={(e) => setBookForm({ ...bookForm, title: e.target.value })} placeholder="Book title" className="col-span-2 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
-                  <input value={bookForm.course} onChange={(e) => setBookForm({ ...bookForm, course: e.target.value.toUpperCase() })} placeholder="Course (e.g. MAT137Y1)" className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
-                  <input value={bookForm.author} onChange={(e) => setBookForm({ ...bookForm, author: e.target.value })} placeholder="Author" className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
-                  <input value={bookForm.edition} onChange={(e) => setBookForm({ ...bookForm, edition: e.target.value })} placeholder="Edition (e.g. 3rd)" className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
-                  <input type="number" value={bookForm.price} onChange={(e) => setBookForm({ ...bookForm, price: e.target.value })} placeholder="Price (CAD)" className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]" />
+                  <input value={bookForm.title} onChange={(e) => setBookForm({ ...bookForm, title: e.target.value })}
+                    placeholder="Book title"
+                    className="col-span-2 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                  />
+                  <input value={bookForm.course} onChange={(e) => setBookForm({ ...bookForm, course: e.target.value.toUpperCase() })}
+                    placeholder="Course (e.g. MAT137Y1)"
+                    className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                  />
+                  <input value={bookForm.author} onChange={(e) => setBookForm({ ...bookForm, author: e.target.value })}
+                    placeholder="Author"
+                    className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                  />
+                  <input value={bookForm.edition} onChange={(e) => setBookForm({ ...bookForm, edition: e.target.value })}
+                    placeholder="Edition (e.g. 3rd)"
+                    className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                  />
+                  <input type="number" value={bookForm.price} onChange={(e) => setBookForm({ ...bookForm, price: e.target.value })}
+                    placeholder="Price (CAD)" min="1"
+                    className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
+                  />
                 </div>
                 <div className="flex gap-2 mb-4">
                   {CONDITIONS.map((c) => (
-                    <button key={c} onClick={() => setBookForm({ ...bookForm, condition: c })} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bookForm.condition === c ? "bg-[#002A5C] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>{c}</button>
+                    <button key={c} type="button" onClick={() => setBookForm({ ...bookForm, condition: c })}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        bookForm.condition === c ? "bg-[#002A5C] text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}>
+                      {c}
+                    </button>
                   ))}
                 </div>
-                <button onClick={listTextbook} disabled={!profileName} className="w-full bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40">
-                  List Textbook →
-                </button>
+                <div className="flex gap-3">
+                  <button onClick={listTextbook} disabled={submittingBook || !bookForm.title.trim() || !bookForm.price}
+                    className="flex-1 bg-[#002A5C] text-white font-bold py-3 rounded-xl text-sm hover:bg-black transition-colors disabled:opacity-40">
+                    {submittingBook ? "Listing..." : "List Textbook →"}
+                  </button>
+                  <button onClick={() => setShowBookForm(false)}
+                    className="px-5 border border-gray-200 text-gray-500 font-semibold py-3 rounded-xl text-sm hover:border-gray-400 transition-colors">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* No profile prompt */}
+            {!profile && (
+              <div className="bg-white border border-gray-100 rounded-2xl p-5 flex items-center justify-between gap-4">
+                <p className="text-sm text-gray-500">Create a profile to list textbooks for sale.</p>
+                <Link href="/profile" className="text-xs font-bold text-[#002A5C] border border-[#002A5C]/20 px-4 py-2 rounded-xl hover:bg-[#002A5C] hover:text-white transition-all shrink-0">
+                  Create Profile
+                </Link>
               </div>
             )}
 
             {/* Search */}
-            <input
-              value={bookSearch}
-              onChange={(e) => setBookSearch(e.target.value)}
+            <input value={bookSearch} onChange={(e) => setBookSearch(e.target.value)}
               placeholder="Search by title or course code..."
               className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
             />
 
             {/* Listings */}
-            <div className="space-y-3">
-              {filteredBooks.map((b) => (
-                <div key={b.id} className="bg-white border border-gray-100 rounded-2xl px-5 py-4 flex items-center gap-5">
-                  <div className="w-12 h-14 rounded-xl bg-[#002A5C] flex items-center justify-center shrink-0">
-                    <span className="text-white text-xs font-black text-center leading-tight px-1">{b.course.slice(0, 3)}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-black text-sm truncate">{b.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{b.author} · {b.edition} edition · <span className="font-mono">{b.course}</span></p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${CONDITION_COLORS[b.condition]}`}>{b.condition}</span>
-                      <span className="text-xs text-gray-400">by {b.seller} · {b.posted}</span>
+            {loading ? (
+              <div className="text-center py-12"><div className="w-6 h-6 border-2 border-[#002A5C]/20 border-t-[#002A5C] rounded-full animate-spin mx-auto" /></div>
+            ) : filteredBooks.length === 0 ? (
+              <div className="bg-white border border-gray-100 rounded-2xl text-center py-16 text-gray-300">
+                <p className="text-sm font-semibold">No textbooks listed yet — sell yours</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredBooks.map((b) => {
+                  const isMe = b.seller_name.toLowerCase() === profile?.displayName.toLowerCase();
+                  return (
+                    <div key={b.id} className="bg-white border border-gray-100 rounded-2xl px-5 py-4 flex items-center gap-5">
+                      <div className="w-12 h-14 rounded-xl bg-[#002A5C] flex items-center justify-center shrink-0">
+                        <span className="text-white text-xs font-black text-center leading-tight px-1">{(b.course || "BK").slice(0, 3)}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-black text-sm truncate">{b.title}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {b.author && `${b.author} · `}{b.edition && `${b.edition} edition · `}
+                          {b.course && <span className="font-mono">{b.course}</span>}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${CONDITION_COLORS[b.condition]}`}>{b.condition}</span>
+                          <span className="text-xs text-gray-400">
+                            by{" "}
+                            <Link href={`/profile/${encodeURIComponent(b.seller_name)}`} className="font-semibold hover:underline">
+                              {b.seller_name}
+                            </Link>
+                            {" · "}{fmtTime(b.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-black text-[#002A5C] text-xl">${b.price}</p>
+                        {isMe ? (
+                          <button onClick={() => markSold(b.id)}
+                            className="mt-2 border border-gray-200 text-gray-500 text-xs font-bold px-4 py-2 rounded-xl hover:border-red-300 hover:text-red-500 transition-colors block">
+                            Mark Sold
+                          </button>
+                        ) : profile ? (
+                          <button onClick={() => router.push(`/chat?tab=dm&with=${encodeURIComponent(b.seller_name)}`)}
+                            className="mt-2 bg-[#002A5C] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-black transition-colors block">
+                            Contact
+                          </button>
+                        ) : (
+                          <Link href="/profile"
+                            className="mt-2 bg-gray-100 text-gray-500 text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-200 transition-colors block text-center">
+                            Sign in
+                          </Link>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-black text-[#002A5C] text-xl">${b.price}</p>
-                    <button className="mt-2 bg-[#002A5C] text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-black transition-colors">
-                      Contact
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
   );
 }
-

@@ -103,6 +103,7 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     displayName: "",
+    tag: "",
     year: "",
     programs: [] as string[],
     bio: "",
@@ -111,6 +112,7 @@ export default function ProfilePage() {
     coverColor: "#002A5C",
     coverImage: undefined as string | undefined,
   });
+  const [tagError, setTagError] = useState("");
   const [saved, setSaved] = useState(false);
   const [openCampus, setOpenCampus] = useState<string | null>("St. George (UTSG)");
   const [connInput, setConnInput] = useState("");
@@ -130,6 +132,7 @@ export default function ProfilePage() {
         setProfile(p);
         setForm({
           displayName: p.displayName,
+          tag: p.tag ?? "",
           year: p.year,
           programs: p.programs ?? [],
           bio: p.bio,
@@ -207,11 +210,18 @@ export default function ProfilePage() {
 
   async function handleSave() {
     if (!form.displayName.trim()) return;
+    const tag = form.tag.trim().toLowerCase();
+    if (tag && !/^[a-z0-9_]{3,20}$/.test(tag)) {
+      setTagError("Tag must be 3–20 characters: letters, numbers, underscores only.");
+      return;
+    }
+    setTagError("");
     const isNew = !profile;
     const { data: { user } } = await supabase.auth.getUser();
     const p: Profile = {
       id: user?.id ?? profile?.id ?? "",
       displayName: form.displayName.trim(),
+      tag: tag || undefined,
       year: form.year,
       programs: form.programs,
       bio: form.bio.trim(),
@@ -221,7 +231,12 @@ export default function ProfilePage() {
       coverImage: form.coverImage,
       connections: profile?.connections ?? [],
     };
-    await saveProfile(p);
+    try {
+      await saveProfile(p);
+    } catch {
+      setTagError("That tag is already taken. Try another.");
+      return;
+    }
     setProfile(p);
     setEditing(false);
     if (isNew) {
@@ -237,7 +252,7 @@ export default function ProfilePage() {
   async function handleDelete() {
     await clearProfile();
     setProfile(null);
-    setForm({ displayName: "", year: "", programs: [], bio: "", avatar: "#002A5C", avatarImage: undefined, coverColor: "#002A5C", coverImage: undefined });
+    setForm({ displayName: "", tag: "", year: "", programs: [], bio: "", avatar: "#002A5C", avatarImage: undefined, coverColor: "#002A5C", coverImage: undefined });
     setEditing(true);
   }
 
@@ -410,12 +425,40 @@ export default function ProfilePage() {
                 </label>
                 <input
                   value={form.displayName}
-                  onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    setForm((f) => ({
+                      ...f,
+                      displayName: name,
+                      tag: f.tag || name.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "").slice(0, 20),
+                    }));
+                  }}
                   placeholder="e.g. Alex Chen"
                   maxLength={30}
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#002A5C]"
                 />
-                <p className="text-xs text-gray-400 mt-1.5">Visible across all chats and study sessions.</p>
+                <p className="text-xs text-gray-400 mt-1.5">Shown in chats and study sessions.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+                  Username <span className="text-gray-300 normal-case font-normal">(your @handle)</span>
+                </label>
+                <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#002A5C]">
+                  <span className="pl-4 pr-1 text-sm font-bold text-gray-400">@</span>
+                  <input
+                    value={form.tag}
+                    onChange={(e) => {
+                      setTagError("");
+                      setForm((f) => ({ ...f, tag: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20) }));
+                    }}
+                    placeholder="alex_chen"
+                    maxLength={20}
+                    className="flex-1 py-3 pr-4 text-sm focus:outline-none bg-transparent"
+                  />
+                </div>
+                {tagError && <p className="text-red-500 text-xs mt-1.5 font-medium">{tagError}</p>}
+                <p className="text-xs text-gray-400 mt-1.5">3–20 chars, letters, numbers, underscores. Must be unique.</p>
               </div>
 
               <div>
@@ -599,6 +642,9 @@ export default function ProfilePage() {
 
             {/* Name */}
             <h1 className="text-2xl font-black text-black leading-tight">{profile.displayName}</h1>
+            {profile.tag && (
+              <p className="text-sm text-gray-400 font-medium mt-0.5">@{profile.tag}</p>
+            )}
 
             {/* Year + programs inline */}
             {(profile.year || programs.length > 0) && (

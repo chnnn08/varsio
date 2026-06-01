@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 export type Profile = {
   id: string;
   displayName: string;
+  tag?: string;
   year: string;
   programs: string[];
   bio: string;
@@ -22,6 +23,7 @@ function rowToProfile(row: Record<string, unknown>): Profile {
     bio: (row.bio as string) ?? "",
     avatar: (row.avatar as string) ?? "#002A5C",
     avatarImage: (row.avatar_image as string) ?? undefined,
+    tag: (row.tag as string) ?? undefined,
     coverColor: (row.cover_color as string) ?? "#002A5C",
     coverImage: (row.cover_image as string) ?? undefined,
     connections: (row.connections as string[]) ?? [],
@@ -46,6 +48,7 @@ export async function saveProfile(p: Profile): Promise<void> {
   await supabase.from("profiles").upsert({
     id: user.id,
     display_name: p.displayName,
+    tag: p.tag ?? null,
     year: p.year,
     programs: p.programs,
     bio: p.bio,

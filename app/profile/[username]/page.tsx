@@ -138,8 +138,9 @@ export default function PublicProfilePage() {
           />
         </div>
 
-        {/* Name + year */}
+        {/* Name + tag + year */}
         <h1 className="text-2xl font-black text-black leading-tight">{target.displayName}</h1>
+        {target.tag && <p className="text-sm text-gray-400 font-medium mt-0.5">@{target.tag}</p>}
         {target.year && <p className="text-sm text-gray-500 mt-0.5">{target.year}</p>}
 
         {/* Action buttons */}
