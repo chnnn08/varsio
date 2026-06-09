@@ -13,6 +13,7 @@ const links = [
   { href: "/tools", label: "Tools" },
   { href: "/marketplace", label: "Marketplace" },
   { href: "/explore", label: "Explore" },
+  { href: "/agents", label: "Agents" },
 ];
 
 function VarsioIcon() {

@@ -329,7 +329,7 @@ function ChatInner() {
     return pool.filter((n) => !q || n.toLowerCase().includes(q)).slice(0, 6);
   }
 
-  function detectMention(text: string, active: "post" | number) {
+  function detectMention(text: string, active: string) {
     const match = text.match(/@(\w*)$/);
     if (match) setMention({ active, query: match[1] });
     else if (mention) setMention(null);
@@ -344,7 +344,7 @@ function ChatInner() {
       const after = postText.slice(cursor);
       setPostText(before + after);
     } else {
-      const id = mention.active as number;
+      const id = mention.active;
       const cur = replyInputs[id] ?? "";
       setReplyInputs((prev) => ({ ...prev, [id]: cur.replace(/@\w*$/, `@${name} `) }));
     }
